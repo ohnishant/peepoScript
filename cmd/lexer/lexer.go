@@ -1,8 +1,6 @@
 package lexer
 
 import (
-	"fmt"
-
 	"github.com/ohnishat/peepoScript/cmd/token"
 )
 
@@ -27,7 +25,6 @@ func (l *Lexer) readChar() {
 	}
 	l.position = l.readPosition
 	l.readPosition++
-	fmt.Printf("just finished reading- %v\n", string(l.ch))
 }
 
 func (l *Lexer) NextToken() token.Token {
