@@ -20,8 +20,8 @@ const (
 	MULTIPLY = "MULTIPLY"
 	DIVIDE   = "DIVIDE"
 
-	COMMA     = "COMMA"
-	SEMICOLON = "SEMICOLON"
+	COMMA    = "COMMA"
+	FULLSTOP = "FULLSTOP"
 
 	LPAREN = "LPAREN"
 	RPAREN = "RPAREN"
@@ -37,13 +37,13 @@ const (
 var keywords = map[string]TokenType{
 	"peepoCookie": ASSIGN,
 
-	"peepoLBrace": LBRACE,
-	"peepoRBrace": RBRACE,
+	"Wokege": LBRACE,
+	"Bedge":  RBRACE,
 
-	"peepoAdd":     PLUS,
-	"PepegaCredit": MINUS,
-	"mitosis":      MULTIPLY,
-	"peepoDivide":  DIVIDE,
+	"peepoFriendship": PLUS,
+	"PepegaCredit":    MINUS,
+	"mitosis":         MULTIPLY,
+	"peepoDivide":     DIVIDE,
 
 	"SadgeBusiness": FUNCTION,
 	"PepoG":         LET,
