@@ -43,7 +43,7 @@ var keywords = map[string]TokenType{
 	"peepoFriendship": PLUS,
 	"PepegaCredit":    MINUS,
 	"mitosis":         MULTIPLY,
-	"peepoDivide":     DIVIDE,
+	"peepoBye":        DIVIDE, // this is so stupid
 
 	"SadgeBusiness": FUNCTION,
 	"PepoG":         LET,
