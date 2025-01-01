@@ -20,6 +20,11 @@ const (
 	MULTIPLY = "MULTIPLY"
 	DIVIDE   = "DIVIDE"
 
+	EQUAL       = "EQUAL"
+	LESSTHAN    = "LESSTHAN"
+	GREATERTHAN = "GREATERTHAN"
+	NOT         = "NOT"
+
 	COMMA    = "COMMA"
 	FULLSTOP = "FULLSTOP"
 
@@ -27,6 +32,9 @@ const (
 	RPAREN = "RPAREN"
 	LBRACE = "LBRACE"
 	RBRACE = "RBRACE"
+
+	TRUE  = "TRUE"
+	FALSE = "FALSE"
 
 	FUNCTION = "FUNCTION"
 	LET      = "LET"
@@ -45,8 +53,17 @@ var keywords = map[string]TokenType{
 	"mitosis":         MULTIPLY,
 	"peepoBye":        DIVIDE, // this is so stupid
 
+	"peepoLessThan":    LESSTHAN,
+	"peepoGreaterThan": GREATERTHAN,
+
+	"Scoots":     EQUAL,
+	"peepoJuice": NOT,
+
 	"SadgeBusiness": FUNCTION,
 	"PepoG":         LET,
+
+	"NODDERS": TRUE,
+	"NOPERS":  FALSE,
 
 	"Hmmge":      IF,
 	"peepoShrug": ELSE,

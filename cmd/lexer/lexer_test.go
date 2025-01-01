@@ -45,10 +45,18 @@ func TestNextTokenComplex_1(t *testing.T) {
 
 	PepoG add SadgeBusiness x y Wokege
 		peepoFriendship x y.
-	Bedge.
+	Bedge
 	
 	Hmmge NODDERS Wokege
 		PepoG result add five ten.
+	Bedge
+
+	peepoCookie five peepoFriendship 5.
+
+	Hmmge peepoLessThan five 20 Wokege
+		NODDERS		
+	Bedge peepoShrug Wokege.
+		NOPERS
 	Bedge
 	`
 
@@ -56,29 +64,54 @@ func TestNextTokenComplex_1(t *testing.T) {
 		expectedType    token.TokenType
 		expectedLiteral string
 	}{
-		{token.LET, "PepoG"},
-		{token.IDENT, "ten"},
-		{token.INT, "10"},
-		{token.FULLSTOP, "."},
-		//
-		{token.LET, "PepoG"},
+		{token.LET, "PepoG"},              // 0
+		{token.IDENT, "ten"},              // 1
+		{token.INT, "10"},                 // 2
+		{token.FULLSTOP, "."},             // 3
+		{token.LET, "PepoG"},              // 4
+		{token.IDENT, "five"},             // 5
+		{token.INT, "5"},                  // 6
+		{token.FULLSTOP, "."},             // 7
+		{token.LET, "PepoG"},              // 8
+		{token.IDENT, "add"},              // 9
+		{token.FUNCTION, "SadgeBusiness"}, // 10
+		{token.IDENT, "x"},                // 11
+		{token.IDENT, "y"},                // 12
+		{token.LBRACE, "Wokege"},          // 13
+		{token.PLUS, "peepoFriendship"},   // 14
+		{token.IDENT, "x"},                // 15
+		{token.IDENT, "y"},                // 16
+		{token.FULLSTOP, "."},             // 17
+		{token.RBRACE, "Bedge"},           // 18
+		{token.IF, "Hmmge"},               // 19
+		{token.TRUE, "NODDERS"},           // 20
+		{token.LBRACE, "Wokege"},          // 21
+		{token.LET, "PepoG"},              // 22
+		{token.IDENT, "result"},           // 23
+		{token.IDENT, "add"},              // 24
+		{token.IDENT, "five"},             // 25
+		{token.IDENT, "ten"},              // 26
+		{token.FULLSTOP, "."},             // 27
+		{token.RBRACE, "Bedge"},           // 28
+		//peepoCookie five peepoFriendship 5.
+		{token.ASSIGN, "peepoCookie"},
 		{token.IDENT, "five"},
+		{token.PLUS, "peepoFriendship"},
 		{token.INT, "5"},
 		{token.FULLSTOP, "."},
 		//
-		{token.LET, "PepoG"},
-		{token.IDENT, "add"},
-		{token.FUNCTION, "SadgeBusiness"},
-		{token.IDENT, "x"},
-		{token.IDENT, "y"},
-		{token.LBRACE, "Wokege"},
-		//
-		{token.PLUS, "peepoFriendship"},
-		{token.IDENT, "x"},
-		{token.IDENT, "y"},
-		{token.FULLSTOP, "."},
-		//
-		{token.RBRACE, "Bedge"},
+		{token.IF, "Hmmge"},               // 29
+		{token.LESSTHAN, "peepoLessThan"}, // 30
+		{token.IDENT, "five"},             // 31
+		{token.INT, "20"},                 // 32
+		{token.LBRACE, "Wokege"},          // 33
+		{token.TRUE, "NODDERS"},           // 34
+		{token.RBRACE, "Bedge"},           // 35
+		{token.ELSE, "peepoShrug"},        // 36
+		{token.LBRACE, "Wokege"},          // 37
+		{token.FULLSTOP, "."},             // 38
+		{token.FALSE, "NOPERS"},           // 39
+		{token.RBRACE, "Bedge"},           // 40
 	}
 
 	l := New(input)
