@@ -58,6 +58,7 @@ func TestNextTokenComplex_1(t *testing.T) {
 	Bedge peepoShrug Wokege.
 		NOPERS
 	Bedge
+	"hi i am a string"
 	`
 
 	tests := []struct {
@@ -112,6 +113,7 @@ func TestNextTokenComplex_1(t *testing.T) {
 		{token.FULLSTOP, "."},             // 38
 		{token.FALSE, "NOPERS"},           // 39
 		{token.RBRACE, "Bedge"},           // 40
+		{token.STRING, "hi i am a string"},
 	}
 
 	l := New(input)
