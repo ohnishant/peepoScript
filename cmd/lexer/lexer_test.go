@@ -40,26 +40,79 @@ func TestNextToken_1(t *testing.T) {
 }
 
 func TestNextTokenUnterminatedString(t *testing.T) {
-	input := `"oops`
-
 	tests := []struct {
-		expectedType    token.TokenType
-		expectedLiteral string
+		name  string
+		input string
+		want  []struct {
+			expectedType    token.TokenType
+			expectedLiteral string
+		}
 	}{
-		{token.ILLEGAL, "oops"},
-		{token.EOF, ""},
+		{
+			name:  "text then end of input",
+			input: `"oops`,
+			want: []struct {
+				expectedType    token.TokenType
+				expectedLiteral string
+			}{
+				{token.ILLEGAL, "oops"},
+				{token.EOF, ""},
+			},
+		},
+		{
+			name:  "only an opening quote",
+			input: `"`,
+			want: []struct {
+				expectedType    token.TokenType
+				expectedLiteral string
+			}{
+				{token.ILLEGAL, ""},
+				{token.EOF, ""},
+			},
+		},
+		{
+			name:  "mid-program",
+			input: `PepoG x "oops.`,
+			want: []struct {
+				expectedType    token.TokenType
+				expectedLiteral string
+			}{
+				{token.LET, "PepoG"},
+				{token.IDENT, "x"},
+				{token.ILLEGAL, "oops."},
+				{token.EOF, ""},
+			},
+		},
 	}
 
-	l := New(input)
-	for i, tt := range tests {
-		var tok token.Token = l.NextToken()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := New(tt.input)
+			for i, want := range tt.want {
+				var tok token.Token = l.NextToken()
 
-		if tok.Type != tt.expectedType {
-			t.Fatalf("tests[%d] - wrong token type. Expected %q got %q", i, tt.expectedType, tok.Type)
-		}
+				if tok.Type != want.expectedType {
+					t.Fatalf("tests[%d] - wrong token type. Expected %q got %q", i, want.expectedType, tok.Type)
+				}
 
-		if tok.Literal != tt.expectedLiteral {
-			t.Fatalf("tests[%d] - wrong token literal. Expected %q got %q", i, tt.expectedLiteral, tok.Literal)
+				if tok.Literal != want.expectedLiteral {
+					t.Fatalf("tests[%d] - wrong token literal. Expected %q got %q", i, want.expectedLiteral, tok.Literal)
+				}
+			}
+		})
+	}
+}
+
+// A regression here used to spin forever instead of returning, so pull a few
+// tokens past the bad input and make sure every call comes back as EOF.
+func TestNextTokenKeepsReturningEOFAfterUnterminatedString(t *testing.T) {
+	l := New(`"oops`)
+	l.NextToken() // ILLEGAL
+
+	for i := 0; i < 5; i++ {
+		tok := l.NextToken()
+		if tok.Type != token.EOF {
+			t.Fatalf("call %d - expected EOF got %q (%q)", i, tok.Type, tok.Literal)
 		}
 	}
 }
