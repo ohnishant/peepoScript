@@ -27,8 +27,11 @@
           </select>
         </label>
       </div>
-      <div id="editor" contenteditable="true" spellcheck="false"
-           aria-label="peepoScript source"></div>
+      <div class="editor-wrap">
+        <div id="gutter" aria-hidden="true"></div>
+        <div id="editor" contenteditable="true" spellcheck="false"
+             aria-label="peepoScript source"></div>
+      </div>
       <div class="editor-actions">
         <button id="run-btn" disabled>run (ctrl+enter)</button>
         <button id="clear-btn">clear output</button>
