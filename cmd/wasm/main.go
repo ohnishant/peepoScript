@@ -26,16 +26,29 @@ func main() {
 			return js.ValueOf(map[string]any{"ok": false, "errors": []any{"peepoRun expects exactly one argument"}})
 		}
 		out.Reset()
-		res := runner.Run(args[0].String(), env)
 
-		errs := make([]any, len(res.Errors))
-		for i, e := range res.Errors {
-			errs[i] = e
+		errs := []any{}
+		obj, err := runner.Run(args[0].String(), env)
+		switch e := err.(type) {
+		case nil:
+		case *runner.ParseError:
+			for _, msg := range e.Errors {
+				errs = append(errs, msg)
+			}
+		case *runner.RuntimeError:
+			errs = append(errs, e.Object.Inspect())
+		default:
+			errs = append(errs, e.Error())
+		}
+
+		value := ""
+		if err == nil && obj.Type() != evaluator.NULL_OBJ {
+			value = obj.Inspect()
 		}
 		return js.ValueOf(map[string]any{
-			"ok":     res.OK,
+			"ok":     err == nil,
 			"output": out.String(),
-			"value":  res.Value,
+			"value":  value,
 			"errors": errs,
 		})
 	})
