@@ -1,5 +1,7 @@
 package token
 
+import "sort"
+
 type TokenType string
 
 type Token struct {
@@ -69,6 +71,16 @@ var keywords = map[string]TokenType{
 
 	"Hmmge":      IF,
 	"peepoShrug": ELSE,
+}
+
+// Keywords returns the language keyword literals in a stable order.
+func Keywords() []string {
+	words := make([]string, 0, len(keywords))
+	for word := range keywords {
+		words = append(words, word)
+	}
+	sort.Strings(words)
+	return words
 }
 
 func LookupIdent(ident string) TokenType {
