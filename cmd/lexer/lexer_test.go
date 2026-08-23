@@ -57,6 +57,14 @@ func runTokenTest(t *testing.T, name, input string, want []token.Token) {
 	})
 }
 
+func TestNextTokenKeywordsWithDigits(t *testing.T) {
+	runTokenTest(t, "emote keywords may contain digits", `Thinking1 1 Thinking2`, []token.Token{
+		{Type: token.LBRACKET, Literal: "Thinking1"},
+		{Type: token.INT, Literal: "1"},
+		{Type: token.RBRACKET, Literal: "Thinking2"},
+	})
+}
+
 func TestNextTokenUnterminatedString(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -137,11 +145,10 @@ func TestNextTokenNegativeIntegerLiteral(t *testing.T) {
 			},
 		},
 		{
-			name:  "PepegaCredit stays binary, adjacent digits or not",
+			name:  "digits bind into identifiers, so PepegaCredit5 is one ident",
 			input: `PepegaCredit5.`,
 			want: []token.Token{
-				{Type: token.MINUS, Literal: "PepegaCredit"},
-				{Type: token.INT, Literal: "5"},
+				{Type: token.IDENT, Literal: "PepegaCredit5"},
 				{Type: token.FULLSTOP, Literal: "."},
 			},
 		},

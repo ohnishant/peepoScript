@@ -177,13 +177,26 @@ PepoG add SadgeBusiness a b Wokege
     peepoFriendship a b.
 Bedge
 
-PepoG result add add 1 2 3.   # 6
+PepoG result add 40 2.   # 6
 ```
+
+### Lists
+
+`Thinking1` opens a list and `Thinking2` closes it, for both literals and indexing.
+
+```
+PepoG xs Thinking1 3, 1, 4 Thinking2.
+peepoChat xs.                          # [3, 1, 4]
+peepoChat xs Thinking1 0 Thinking2.    # 3
+peepoChat peepoMeasure xs.             # 3
+```
+
+Lists nest freely; chain the brackets to dig into them: `grid Thinking1 1 Thinking2 Thinking1 0 Thinking2`. Indexing out of range or with a non-integer is a runtime error. Combine with `peepoJuice` to walk a list: see [examples/lists.peepo](examples/lists.peepo).
 
 ### Builtins
 
 - `peepoChat arg1 arg2 ...` prints its arguments separated by spaces.
-- `peepoMeasure str` returns the length of a string.
+- `peepoMeasure str` returns the length of a string or a list.
 
 ## Project layout
 

@@ -153,6 +153,44 @@ func TestParseIfElse(t *testing.T) {
 	}
 }
 
+func TestParseLists(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"Thinking1 Thinking2.", "Thinking1 Thinking2"},
+		{"Thinking1 1, 2, 3 Thinking2.", "Thinking1 1, 2, 3 Thinking2"},
+		{"Thinking1 1, Thinking1 2, 3 Thinking2 Thinking2.", "Thinking1 1, Thinking1 2, 3 Thinking2 Thinking2"},
+		{"PepoG xs Thinking1 1, 2 Thinking2.", "PepoG xs Thinking1 1, 2 Thinking2."},
+		{"peepoChat xs Thinking1 0 Thinking2.", "peepoChat xs Thinking1 0 Thinking2"},
+		{"peepoChat xs Thinking1 0 Thinking2 Thinking1 1 Thinking2.", "peepoChat xs Thinking1 0 Thinking2 Thinking1 1 Thinking2"},
+		{"peepoFriendship xs Thinking1 0 Thinking2 1.", "peepoFriendship xs Thinking1 0 Thinking2 1"},
+	}
+
+	for _, tt := range tests {
+		program, errors := Parse(tt.input)
+		if len(errors) > 0 {
+			t.Fatalf("input %q: unexpected parser errors %v", tt.input, errors)
+		}
+		if got := program.String(); got != tt.expected {
+			t.Errorf("input %q:\nwant %q\ngot  %q", tt.input, tt.expected, got)
+		}
+	}
+}
+
+func TestParseListErrors(t *testing.T) {
+	tests := []string{
+		"Thinking1 1, 2.",
+	}
+
+	for _, input := range tests {
+		_, errors := Parse(input)
+		if len(errors) == 0 {
+			t.Errorf("input %q: expected parser errors, got none", input)
+		}
+	}
+}
+
 func TestParserErrors(t *testing.T) {
 	tests := []string{
 		"PepoG",

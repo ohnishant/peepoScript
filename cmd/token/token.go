@@ -37,6 +37,9 @@ const (
 	LBRACE = "LBRACE"
 	RBRACE = "RBRACE"
 
+	LBRACKET = "LBRACKET"
+	RBRACKET = "RBRACKET"
+
 	TRUE  = "TRUE"
 	FALSE = "FALSE"
 
@@ -73,6 +76,9 @@ var keywords = map[string]TokenType{
 	"peepoShrug": ELSE,
 
 	"peepoJuice": FOR,
+
+	"Thinking1": LBRACKET,
+	"Thinking2": RBRACKET,
 }
 
 // Keywords returns the language keyword literals in a stable order.

@@ -59,6 +59,17 @@ func eval(expr ast.Expression, env *Environment) Object {
 	case *ast.BooleanLiteral:
 		return nativeBool(e.Value)
 
+	case *ast.ArrayLiteral:
+		elements := make([]Object, 0, len(e.Elements))
+		for _, elem := range e.Elements {
+			v := eval(elem, env)
+			if isError(v) {
+				return v
+			}
+			elements = append(elements, v)
+		}
+		return &Array{Elements: elements}
+
 	case *ast.Identifier:
 		val, ok := env.Get(e.Value)
 		if !ok {
@@ -137,12 +148,41 @@ func evalFor(node *ast.ForExpression, env *Environment) Object {
 // evalPrefix resolves a flat operator-first stream. Operators consume their
 // operands by recursion; an identifier bound to something callable consumes
 // as many operands as its arity demands. That is the whole trick behind not
-// needing Wokege and Bedge around every expression.
+// needing Wokege and Bedge around every expression. Index hunks
+// (Thinking1 ... Thinking2) apply to whatever the preceding operand
+// evaluated to.
 func evalPrefix(hunks []ast.Expression, env *Environment) Object {
 	pos := 0
 
+	var primary func() Object
 	var next func() Object
+
+	// next evaluates one operand and then applies any index hunks that
+	// trail it, so `xs Thinking1 0 Thinking2` chains like a postfix.
 	next = func() Object {
+		v := primary()
+		if isError(v) {
+			return v
+		}
+		for pos < len(hunks) {
+			idxNode, ok := hunks[pos].(*ast.IndexNode)
+			if !ok {
+				break
+			}
+			pos++
+			idx := eval(idxNode.Index, env)
+			if isError(idx) {
+				return idx
+			}
+			v = applyIndex(v, idx)
+			if isError(v) {
+				return v
+			}
+		}
+		return v
+	}
+
+	primary = func() Object {
 		if pos >= len(hunks) {
 			return &Error{Message: "expression ran out of operands"}
 		}
@@ -159,6 +199,10 @@ func evalPrefix(hunks []ast.Expression, env *Environment) Object {
 		case *ast.BooleanLiteral:
 			pos++
 			return nativeBool(h.Value)
+
+		case *ast.ArrayLiteral:
+			pos++
+			return eval(h, env)
 
 		case *ast.OperatorNode:
 			op := h.Operator
@@ -310,6 +354,22 @@ func applyInfix(op string, left, right Object) Object {
 	}
 
 	return &Error{Message: fmt.Sprintf("unknown operator: %s", op)}
+}
+
+// applyIndex resolves one Thinking1 index Thinking2 against a target.
+func applyIndex(target, index Object) Object {
+	arr, ok := target.(*Array)
+	if !ok {
+		return &Error{Message: fmt.Sprintf("indexing needs a list, got %s", target.Type())}
+	}
+	i, ok := index.(*Integer)
+	if !ok {
+		return &Error{Message: fmt.Sprintf("list index must be an integer, got %s", index.Type())}
+	}
+	if i.Value < 0 || i.Value >= int64(len(arr.Elements)) {
+		return &Error{Message: fmt.Sprintf("index out of range: %d, list length is %d", i.Value, len(arr.Elements))}
+	}
+	return arr.Elements[i.Value]
 }
 
 func equals(left, right Object) Object {

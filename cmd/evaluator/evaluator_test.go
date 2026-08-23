@@ -208,6 +208,95 @@ func TestForLoopScoping(t *testing.T) {
 	}
 }
 
+func TestListLiterals(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"Thinking1 Thinking2.", "[]"},
+		{"Thinking1 1, 2, 3 Thinking2.", "[1, 2, 3]"},
+		{"Thinking1 \"a\", NODDERS, 2 Thinking2.", "[a, NODDERS, 2]"},
+		{"Thinking1 1, Thinking1 2, 3 Thinking2 Thinking2.", "[1, [2, 3]]"},
+	}
+
+	for _, tt := range tests {
+		_, evaluated := testEval(t, tt.input)
+		if evaluated.Type() == ERROR_OBJ {
+			t.Fatalf("input %q: %s", tt.input, evaluated.Inspect())
+		}
+		if evaluated.Inspect() != tt.expected {
+			t.Errorf("input %q: expected %s, got %s", tt.input, tt.expected, evaluated.Inspect())
+		}
+	}
+}
+
+func TestListIndexing(t *testing.T) {
+	input := `
+	PepoG xs Thinking1 10, 20, 30 Thinking2.
+	xs Thinking1 0 Thinking2.
+	`
+	_, evaluated := testEval(t, input)
+	if evaluated.Inspect() != "10" {
+		t.Errorf("expected first element 10, got %s", evaluated.Inspect())
+	}
+
+	chained := `
+	PepoG nested Thinking1 1, Thinking1 5, 6 Thinking2 Thinking2.
+	nested Thinking1 1 Thinking2 Thinking1 0 Thinking2.
+	`
+	_, evaluated = testEval(t, chained)
+	if evaluated.Inspect() != "5" {
+		t.Errorf("expected chained index to yield 5, got %s", evaluated.Inspect())
+	}
+
+	inExpr := `
+	PepoG xs Thinking1 7, 8 Thinking2.
+	peepoFriendship xs Thinking1 1 Thinking2 1.
+	`
+	_, evaluated = testEval(t, inExpr)
+	if evaluated.Inspect() != "9" {
+		t.Errorf("expected indexed operand in expression to yield 9, got %s", evaluated.Inspect())
+	}
+}
+
+func TestListIndexErrors(t *testing.T) {
+	tests := []struct {
+		input   string
+		message string
+	}{
+		{"PepoG xs Thinking1 1 Thinking2. xs Thinking1 5 Thinking2.", "index out of range"},
+		{"PepoG xs Thinking1 1 Thinking2. xs Thinking1 \"zero\" Thinking2.", "list index must be an integer"},
+		{"PepoG x 1. x Thinking1 0 Thinking2.", "indexing needs a list"},
+		{"Thinking1 1 Thinking2 Thinking1 3 Thinking2.", "index out of range"},
+	}
+
+	for _, tt := range tests {
+		_, evaluated := testEval(t, tt.input)
+		err, ok := evaluated.(*Error)
+		if !ok {
+			t.Fatalf("input %q: expected Error, got %T (%v)", tt.input, evaluated, evaluated)
+		}
+		if !contains(err.Message, tt.message) {
+			t.Errorf("input %q: expected message containing %q, got %q", tt.input, tt.message, err.Message)
+		}
+	}
+}
+
+func TestLoopOverList(t *testing.T) {
+	input := `
+	PepoG xs Thinking1 3, 1, 4, 1, 5 Thinking2.
+	PepoG total 0.
+	peepoJuice PepoG i 0. peepoLessThan i peepoMeasure xs. peepoCookie i peepoFriendship i 1. Wokege
+		peepoCookie total peepoFriendship total xs Thinking1 i Thinking2.
+	Bedge
+	total.
+	`
+	_, evaluated := testEval(t, input)
+	if evaluated.Inspect() != "14" {
+		t.Errorf("expected sum of list elements 14, got %s", evaluated.Inspect())
+	}
+}
+
 func TestBlockScoping(t *testing.T) {
 	input := `
 	PepoG x 1.
