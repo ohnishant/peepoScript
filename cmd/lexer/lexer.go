@@ -30,7 +30,13 @@ func (l *Lexer) readChar() {
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
-	l.skipWhitespace()
+	for {
+		l.skipWhitespace()
+		if l.ch != '#' {
+			break
+		}
+		l.skipComment()
+	}
 
 	switch l.ch {
 	case '(':
@@ -83,6 +89,16 @@ func (l *Lexer) readString() (string, bool) {
 
 func (l *Lexer) skipWhitespace() {
 	for l.ch == ' ' || l.ch == '\r' || l.ch == '\n' || l.ch == '\t' {
+		l.readChar()
+	}
+}
+
+// skipComment drops everything from a # to the end of the line.
+func (l *Lexer) skipComment() {
+	if l.ch != '#' {
+		return
+	}
+	for l.ch != '\n' && l.ch != 0 {
 		l.readChar()
 	}
 }
