@@ -3,6 +3,17 @@ name: Pages
 on:
   push:
     branches: [main]
+    # Only redeploy when the deployed artifact can actually change. The
+    # playground bundles peepo.wasm, which is compiled from every Go
+    # package, so any Go source change counts - but docs and workflow
+    # edits do not.
+    paths:
+      - "**.go"
+      - go.mod
+      - go.sum
+      - web/**
+      - assets/**
+      - scripts/build-web.sh
   workflow_dispatch:
 
 permissions:
