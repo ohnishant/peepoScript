@@ -4,7 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os"
 	"strings"
+
+	"github.com/chzyer/readline"
 
 	"github.com/ohnishat/peepoScript/cmd/evaluator"
 	"github.com/ohnishat/peepoScript/cmd/parser"
@@ -27,13 +30,124 @@ func isIncomplete(errors []string) bool {
 	return true
 }
 
+type session struct {
+	env     *evaluator.Environment
+	pending string
+}
+
+func (s *session) evalLine(line string) []string {
+	input := s.pending + "\n" + line
+
+	program, errors := parser.Parse(input)
+	if isIncomplete(errors) {
+		s.pending = input
+		return nil
+	}
+	s.pending = ""
+
+	if len(errors) > 0 {
+		return errors
+	}
+
+	evaluated := evaluator.Eval(program, s.env)
+	if evaluated.Type() != evaluator.NULL_OBJ {
+		return []string{evaluated.Inspect()}
+	}
+	return nil
+}
+
+// runeCompleter adapts completion sources to readline's tab handler.
+type runeCompleter struct {
+	sources []Source
+}
+
+func (c *runeCompleter) Do(line []rune, pos int) ([][]rune, int) {
+	prefix := string(line[:pos])
+	start := len(prefix)
+	for i := start - 1; i >= 0; i-- {
+		if strings.ContainsRune(" \t\n", rune(prefix[i])) {
+			break
+		}
+		start = i
+	}
+	word := prefix[start:]
+
+	var suggestions []string
+	for _, src := range c.sources {
+		suggestions = append(suggestions, src.Suggestions(word)...)
+	}
+	if len(suggestions) == 0 {
+		return nil, 0
+	}
+
+	items := make([][]rune, len(suggestions))
+	for i, s := range suggestions {
+		items[i] = []rune(strings.TrimPrefix(s, word))
+	}
+	return items, start
+}
+
+func defaultSources() []Source {
+	return []Source{newTokenSource()}
+}
+
+// interactive runs the REPL through readline so Tab completes against
+// the configured sources.
+func interactive(sources []Source) error {
+	rl, err := readline.NewEx(&readline.Config{
+		Prompt:          PROMPT,
+		InterruptPrompt: "^C",
+	})
+	if err != nil {
+		return err
+	}
+	defer rl.Close()
+	rl.Config.AutoComplete = &runeCompleter{sources: sources}
+
+	sess := &session{env: evaluator.NewEnvironment()}
+	for {
+		if sess.pending != "" {
+			rl.SetPrompt(CONTINUATION_PROMPT)
+		} else {
+			rl.SetPrompt(PROMPT)
+		}
+		line, err := rl.Readline()
+		if err != nil { // io.EOF or ^C
+			return nil
+		}
+		for _, out := range sess.evalLine(line) {
+			fmt.Println(out)
+		}
+	}
+}
+
+// isTerminal reports whether in is an interactive terminal, using the
+// char-device bit from the stdlib. Good enough here; x/term would only
+// buy us stricter ioctl checks we don't need.
+func isTerminal(in io.Reader) bool {
+	f, ok := in.(*os.File)
+	if !ok {
+		return false
+	}
+	info, err := f.Stat()
+	if err != nil {
+		return false
+	}
+	return info.Mode()&os.ModeCharDevice != 0
+}
+
 func StartRepl(in io.Reader, out io.Writer) {
+	if isTerminal(in) {
+		if err := interactive(defaultSources()); err == nil {
+			return
+		}
+	}
+
 	scanner := bufio.NewScanner(in)
-	env := evaluator.NewEnvironment()
-	pending := ""
+	sess := &session{env: evaluator.NewEnvironment()}
 
 	for {
-		if pending == "" {
+		if sess.pending == "" {
 			fmt.Fprint(out, PROMPT)
 		} else {
 			fmt.Fprint(out, CONTINUATION_PROMPT)
@@ -43,25 +157,8 @@ func StartRepl(in io.Reader, out io.Writer) {
 			return
 		}
 
-		input := pending + "\n" + scanner.Text()
-
-		program, errors := parser.Parse(input)
-		if isIncomplete(errors) {
-			pending = input
-			continue
-		}
-		pending = ""
-
-		if len(errors) > 0 {
-			for _, err := range errors {
-				fmt.Fprintln(out, err)
-			}
-			continue
-		}
-
-		evaluated := evaluator.Eval(program, env)
-		if evaluated.Type() != evaluator.NULL_OBJ {
-			fmt.Fprintln(out, evaluated.Inspect())
+		for _, line := range sess.evalLine(scanner.Text()) {
+			fmt.Fprintln(out, line)
 		}
 	}
 }

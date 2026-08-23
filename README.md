@@ -29,6 +29,8 @@ Peepo Script - 0.1.0 | REPL
 
 Statements end with a fullstop. The result of the last expression gets printed back at you, which doubles as your print statement when you just want to check something.
 
+In an interactive terminal, Tab completes language keywords. Type `peepoC` and hit Tab to get `peepoCookie`:
+
 Blocks open with `Wokege` and close with `Bedge`. If you hit enter before closing one, the REPL drops to a `...` prompt and keeps reading until the block is done:
 
 ```
