@@ -266,20 +266,23 @@ function setCaretOffset(offset) {
 }
 
 // Rebuilds the DOM from source text, swapping exact emote-name words
-// for their images and wrapping string literals in a colored span.
+// for their images and wrapping strings/comments in colored spans.
 // Identifiers split on everything non-word-like, so
 // `peepoChat "Wokege".` renders inside the string quotes too.
 function buildEditorFragment(src) {
   const frag = document.createDocumentFragment();
-  // Strings run quote to quote with no escapes and no newline stop,
-  // mirroring the lexer's readString. Unterminated quotes stay lit to
-  // the end of input because that is exactly what readString will
-  // swallow as ILLEGAL.
-  for (const part of src.split(/("[^"]*(?:"|$))/)) {
+  // Regions mirror the lexer's scan order. A quote opens a string
+  // (quote to next quote, no escapes, newlines allowed; unterminated
+  // runs to EOF, which is exactly what readString will swallow as
+  // ILLEGAL) unless a comment opened first: skipComment eats # to end
+  // of line before readString can see any quote inside it. Whichever
+  // region starts earlier wins the split, so a # inside a string stays
+  // literal and a quote inside a comment stays inert.
+  for (const part of src.split(/("[^"]*(?:"|$)|#[^\n]*)/)) {
     if (!part) continue;
-    if (part.startsWith('"')) {
+    if (part.startsWith('"') || part.startsWith("#")) {
       const span = document.createElement("span");
-      span.className = "str";
+      span.className = part.startsWith('"') ? "str" : "com";
       appendEmoteParts(span, part);
       frag.append(span);
     } else {
@@ -403,6 +406,9 @@ function applySnapshot(snap) {
   editor.replaceChildren(buildEditorFragment(snap.source));
   setCaretOffset(snap.caretOffset ?? snap.source.length);
   renderGutter(snap.source);
+  // Content may no longer support the old scroll position; not every
+  // engine fires a scroll event for its own clamp.
+  gutter.scrollTop = editor.scrollTop;
   committed = snap;
   hideAutocomplete(); // the word before the caret may no longer exist
 }
@@ -457,7 +463,9 @@ editor.addEventListener("scroll", () => {
 gutter.addEventListener("mousedown", (e) => {
   e.preventDefault();
   const row = e.target.closest("div");
-  if (!row) return;
+  // Clicks landing on the container itself (empty space past the last
+  // number) must not teleport the caret to line 1.
+  if (!row || row === gutter) return;
   const line = [...gutter.children].indexOf(row);
   const src = editorSource(editor);
   let off = 0;
