@@ -38,6 +38,32 @@ func TestNextToken_1(t *testing.T) {
 		}
 	}
 }
+
+func TestNextTokenUnterminatedString(t *testing.T) {
+	input := `"oops`
+
+	tests := []struct {
+		expectedType    token.TokenType
+		expectedLiteral string
+	}{
+		{token.ILLEGAL, "oops"},
+		{token.EOF, ""},
+	}
+
+	l := New(input)
+	for i, tt := range tests {
+		var tok token.Token = l.NextToken()
+
+		if tok.Type != tt.expectedType {
+			t.Fatalf("tests[%d] - wrong token type. Expected %q got %q", i, tt.expectedType, tok.Type)
+		}
+
+		if tok.Literal != tt.expectedLiteral {
+			t.Fatalf("tests[%d] - wrong token literal. Expected %q got %q", i, tt.expectedLiteral, tok.Literal)
+		}
+	}
+}
+
 func TestNextTokenComplex_1(t *testing.T) {
 	input := `
 	PepoG ten 10.
