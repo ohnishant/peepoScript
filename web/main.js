@@ -6,6 +6,7 @@ const TOWDAN_TWITCH_ID = "76020462"; // towdan's channel owns the preferred emot
 const AC_MAX_ITEMS = 8;
 
 const editor = document.getElementById("editor");
+const gutter = document.getElementById("gutter");
 const output = document.getElementById("output");
 const runBtn = document.getElementById("run-btn");
 const clearBtn = document.getElementById("clear-btn");
@@ -299,7 +300,22 @@ function appendEmoteParts(root, text) {
 function setEditorSource(src, caretOffset) {
   editor.replaceChildren(buildEditorFragment(src));
   setCaretOffset(caretOffset ?? src.length);
+  renderGutter(src);
   resetUndoHistory();
+}
+
+// Line numbers are derived from the source, not the DOM, so wrapped or
+// partial nodes can never skew them.
+function renderGutter(src) {
+  const lines = Math.max(1, src.split("\n").length);
+  if (gutter.childElementCount === lines) return;
+  const frag = document.createDocumentFragment();
+  for (let i = 1; i <= lines; i++) {
+    const row = document.createElement("div");
+    row.textContent = i;
+    frag.append(row);
+  }
+  gutter.replaceChildren(frag);
 }
 
 function normalize() {
@@ -307,6 +323,7 @@ function normalize() {
   const src = editorSource(editor);
   editor.replaceChildren(buildEditorFragment(src));
   if (off !== null) setCaretOffset(off);
+  renderGutter(src);
   scheduleUndoCommit();
 }
 
@@ -385,6 +402,7 @@ function resetUndoHistory() {
 function applySnapshot(snap) {
   editor.replaceChildren(buildEditorFragment(snap.source));
   setCaretOffset(snap.caretOffset ?? snap.source.length);
+  renderGutter(snap.source);
   committed = snap;
   hideAutocomplete(); // the word before the caret may no longer exist
 }
@@ -427,6 +445,32 @@ editor.addEventListener("paste", (e) => {
 });
 
 editor.addEventListener("blur", () => hideAutocompleteSoon());
+
+// The editor is the only scroller; the gutter mirrors it vertically and
+// never moves horizontally (wide lines scroll under fixed numbers, like
+// a real editor).
+editor.addEventListener("scroll", () => {
+  gutter.scrollTop = editor.scrollTop;
+});
+
+// Clicking a number puts the caret at the start of that line.
+gutter.addEventListener("mousedown", (e) => {
+  e.preventDefault();
+  const row = e.target.closest("div");
+  if (!row) return;
+  const line = [...gutter.children].indexOf(row);
+  const src = editorSource(editor);
+  let off = 0;
+  for (let i = 0; i < line; i++) {
+    const next = src.indexOf("\n", off);
+    if (next === -1) break;
+    off = next + 1;
+  }
+  // Focus first: an empty editor has no boundary for setCaretOffset,
+  // which would otherwise return early and leave focus on the gutter.
+  editor.focus();
+  setCaretOffset(Math.min(off, src.length));
+});
 
 // -------------------------------------------------------- autocomplete
 
