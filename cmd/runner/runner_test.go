@@ -80,8 +80,8 @@ func TestRunRuntimeError(t *testing.T) {
 	if !errors.As(err, &rtErr) {
 		t.Fatalf("error is %T, want *RuntimeError", err)
 	}
-	if !strings.HasPrefix(rtErr.Error(), "PepegaAyyy!") {
-		t.Errorf("runtime error = %q, want PepegaAyyy! prefix", rtErr.Error())
+	if !strings.HasPrefix(rtErr.Error(), "Pepega bro, what the fuck are you doing: ") {
+		t.Errorf("runtime error = %q, want the Pepega prefix", rtErr.Error())
 	}
 }
 

@@ -29,7 +29,7 @@ func (e *ParseError) Error() string {
 }
 
 // RuntimeError wraps an evaluator Error object so callers can tell it
-// apart from parse failures while still getting the PepegaAyyy message.
+// apart from parse failures while still getting the Pepega message.
 type RuntimeError struct {
 	Object *evaluator.Error
 }

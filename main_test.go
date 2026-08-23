@@ -44,7 +44,7 @@ func TestRunCLIModes(t *testing.T) {
 		{
 			name:     "runtime error exits 1 and reports on stderr",
 			args:     []string{"-c", "peepoChat nope."},
-			wantErr:  "PepegaAyyy! identifier not found: nope\n",
+			wantErr:  "Pepega bro, what the fuck are you doing: identifier not found: nope\n",
 			wantExit: 1,
 		},
 		{
