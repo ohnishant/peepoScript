@@ -280,6 +280,7 @@ function buildEditorFragment(src) {
 function setEditorSource(src, caretOffset) {
   editor.replaceChildren(buildEditorFragment(src));
   setCaretOffset(caretOffset ?? src.length);
+  resetUndoHistory();
 }
 
 function normalize() {
@@ -287,11 +288,110 @@ function normalize() {
   const src = editorSource(editor);
   editor.replaceChildren(buildEditorFragment(src));
   if (off !== null) setCaretOffset(off);
+  scheduleUndoCommit();
 }
 
 editor.addEventListener("input", () => {
   normalize();
   updateAutocomplete();
+});
+
+// ---------------------------------------------------------------- undo
+//
+// Rebuilding the DOM on every keystroke throws away the browser's
+// native undo history, so the editor keeps its own. A commit lands
+// UNDO_DEBOUNCE_MS after the last mutation and stores the *previous*
+// known state, so one undo step rewinds a whole typed burst, not just
+// the final character. Programmatic replaces (autocomplete accept,
+// example load) go through setEditorSource and restart the stack.
+
+const UNDO_DEBOUNCE_MS = 400;
+const UNDO_MAX_DEPTH = 200;
+
+let undoStack = [];
+let redoStack = [];
+let committed = null; // {source, caretOffset}: newest state outside the stacks
+let undoTimer = null;
+
+function currentState() {
+  return {
+    source: editorSource(editor),
+    caretOffset: getCaretOffset(),
+  };
+}
+
+// Moves `committed` forward to what is in the editor right now,
+// pushing the stale value onto the undo stack when the text changed.
+function commitUndoPoint() {
+  const cur = currentState();
+  if (cur.source !== committed.source) {
+    undoStack.push(committed);
+    if (undoStack.length > UNDO_MAX_DEPTH) undoStack.shift();
+    redoStack = [];
+  }
+  committed = cur;
+}
+
+function scheduleUndoCommit() {
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(() => {
+    undoTimer = null;
+    commitUndoPoint();
+  }, UNDO_DEBOUNCE_MS);
+}
+
+// Ctrl+z must never race a pending commit, or the burst it belongs to
+// would be skipped entirely.
+function flushUndoCommit() {
+  if (!undoTimer) return;
+  clearTimeout(undoTimer);
+  undoTimer = null;
+  commitUndoPoint();
+}
+
+function resetUndoHistory() {
+  clearTimeout(undoTimer);
+  undoTimer = null;
+  undoStack = [];
+  redoStack = [];
+  committed = currentState();
+}
+
+function applySnapshot(snap) {
+  editor.replaceChildren(buildEditorFragment(snap.source));
+  setCaretOffset(snap.caretOffset ?? snap.source.length);
+  committed = snap;
+  hideAutocomplete(); // the word before the caret may no longer exist
+}
+
+function undoEdit() {
+  flushUndoCommit();
+  const prev = undoStack.pop();
+  if (!prev) return;
+  redoStack.push(currentState());
+  applySnapshot(prev);
+}
+
+function redoEdit() {
+  flushUndoCommit();
+  const next = redoStack.pop();
+  if (!next) return;
+  undoStack.push(currentState());
+  applySnapshot(next);
+}
+
+// Native undo is dead here (normalize() rewrites the DOM it would
+// target), so these combos are always swallowed, history or not.
+editor.addEventListener("keydown", (e) => {
+  if (!(e.ctrlKey || e.metaKey)) return;
+  const key = e.key.toLowerCase();
+  if (key === "z" && !e.shiftKey) {
+    e.preventDefault();
+    undoEdit();
+  } else if ((key === "z" && e.shiftKey) || key === "y") {
+    e.preventDefault();
+    redoEdit();
+  }
 });
 
 // Paste as plain text at the caret; the input event then normalizes.
