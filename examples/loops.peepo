@@ -1,0 +1,19 @@
+# peepoJuice runs a block while its condition holds. The init and step
+# clauses are optional PepoG/peepoCookie statements around the condition.
+peepoJuice PepoG i 0. peepoLessThan i 3. peepoCookie i peepoFriendship i 1. Wokege
+    peepoChat "count" i.
+Bedge
+
+# with only a condition it works as a while loop
+PepoG n 3.
+peepoJuice peepoGreaterThan n 0. peepoCookie n PepegaCredit n 1. Wokege
+    peepoChat n.
+Bedge
+
+# assignments reach the scope a variable was declared in, so the body
+# can accumulate
+PepoG total 0.
+peepoJuice PepoG i 0. peepoLessThan i 10. peepoCookie i peepoFriendship i 1. Wokege
+    peepoCookie total peepoFriendship total i.
+Bedge
+peepoChat "total is" total.

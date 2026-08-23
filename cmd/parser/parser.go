@@ -81,6 +81,8 @@ func (p *Parser) parseStatement() ast.Expression {
 		return p.parseAssign()
 	case token.IF:
 		return p.parseIf()
+	case token.FOR:
+		return p.parseFor()
 	default:
 		return p.parseExpressionStatement()
 	}
@@ -165,6 +167,72 @@ func (p *Parser) parseIf() ast.Expression {
 	}
 }
 
+// parseFor parses a peepoJuice loop:
+//
+//	peepoJuice [init.] condition. [step] Wokege body Bedge
+//
+// Init and step, when present, are PepoG or peepoCookie statements and carry
+// their own fullstops. With both left out the loop is a while over the
+// condition. The condition is mandatory.
+func (p *Parser) parseFor() ast.Expression {
+	forTok := p.curToken
+
+	p.nextToken()
+	// An absent init leaves cur on the first token of the condition, so
+	// there is nothing to check here.
+	init := p.parseForClause()
+
+	cond := p.parseExpression()
+	if cond == nil {
+		return nil
+	}
+	if !p.curTokenIs(token.FULLSTOP) {
+		p.errors = append(p.errors, fmt.Sprintf("Sadge... expected . after peepoJuice condition, got %q", p.curToken.Literal))
+		return nil
+	}
+	p.nextToken()
+
+	step := p.parseForClause()
+	if step == nil && !p.curSlotDone() {
+		p.errors = append(p.errors, fmt.Sprintf("Sadge... expected PepoG or peepoCookie before %q in peepoJuice header", p.curToken.Literal))
+		return nil
+	}
+
+	if !p.curTokenIs(token.LBRACE) {
+		p.errors = append(p.errors, fmt.Sprintf("Sadge... expected Wokege before peepoJuice body, got %s", p.curToken.Type))
+		return nil
+	}
+	body := p.parseBlockProgram()
+
+	return &ast.ForExpression{
+		Token:     forTok,
+		Init:      init,
+		Condition: cond,
+		Step:      step,
+		Body:      body,
+	}
+}
+
+// parseForClause parses the optional init or step of a peepoJuice header,
+// which must be a PepoG or peepoCookie statement. Returns nil when the slot
+// is empty or broken; curSlotDone tells the two apart.
+func (p *Parser) parseForClause() ast.Expression {
+	switch p.curToken.Type {
+	case token.LET:
+		return p.parseLet()
+	case token.ASSIGN:
+		return p.parseAssign()
+	default:
+		return nil
+	}
+}
+
+// curSlotDone reports whether the parser sits at Wokege, meaning an optional
+// peepoJuice header clause was legitimately absent.
+func (p *Parser) curSlotDone() bool {
+	return p.curTokenIs(token.LBRACE)
+}
+
 // parseBlockProgram parses statements between Wokege ... Bedge and consumes
 // the closing Bedge.
 func (p *Parser) parseBlockProgram() *ast.Program {
@@ -238,7 +306,7 @@ func (p *Parser) acceptFullstop() {
 func isExprStart(t token.TokenType) bool {
 	switch t {
 	case token.INT, token.STRING, token.TRUE, token.FALSE,
-		token.IDENT, token.NOT, token.NEGATE,
+		token.IDENT, token.NEGATE,
 		token.PLUS, token.MINUS, token.MULTIPLY, token.DIVIDE,
 		token.EQUAL, token.LESSTHAN, token.GREATERTHAN:
 		return true
@@ -254,7 +322,6 @@ var operators = map[token.TokenType]string{
 	token.EQUAL:       "==",
 	token.LESSTHAN:    "<",
 	token.GREATERTHAN: ">",
-	token.NOT:         "!",
 }
 
 // parseExpression collects a flat operator-first stream of hunks until a
@@ -285,9 +352,6 @@ func (p *Parser) parseExpression() ast.Expression {
 
 		case token.IDENT:
 			prefix.Hunks = append(prefix.Hunks, &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal})
-
-		case token.NOT:
-			prefix.Hunks = append(prefix.Hunks, &ast.OperatorNode{Token: p.curToken, Operator: "!"})
 
 		case token.NEGATE:
 			// Unary minus, written as -. Distinct from MINUS (PepegaCredit),

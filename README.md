@@ -138,7 +138,6 @@ peepoCookie answer 43.    # assign
 | `peepoLessThan`    | less than    |
 | `peepoGreaterThan` | greater than |
 | `Scoots`           | equality     |
-| `peepoJuice`       | not          |
 
 Operators nest freely, so `mitosis peepoFriendship 1 2 3` is `(1 + 2) * 3`.
 
@@ -151,6 +150,21 @@ Hmmge Scoots x 10 Wokege
     peepoChat "ten".
 Bedge peepoShrug Wokege
     peepoChat "not ten".
+Bedge
+```
+
+### Loops
+
+`peepoJuice` runs a `Wokege`/`Bedge` block while its condition holds. The init and step clauses are optional `PepoG` or `peepoCookie` statements; leave both out and the loop is a plain while. Assignments reach the scope a variable was declared in, so the body can accumulate into outer bindings.
+
+```
+peepoJuice PepoG i 0. peepoLessThan i 3. peepoCookie i peepoFriendship i 1. Wokege
+    peepoChat i.
+Bedge
+
+PepoG n 3.
+peepoJuice peepoGreaterThan n 0. peepoCookie n PepegaCredit n 1. Wokege
+    peepoChat n.
 Bedge
 ```
 

@@ -113,3 +113,37 @@ func (ie *IfExpression) String() string {
 	}
 	return out.String()
 }
+
+// ForExpression is a peepoJuice loop. Init and Step are optional PepoG or
+// peepoCookie statements; with both left out the loop works as a while over
+// Condition. Condition must be present, so there is no accidental infinite
+// form.
+type ForExpression struct {
+	Token     token.Token // peepoJuice
+	Init      Expression
+	Condition Expression
+	Step      Expression
+	Body      *Program
+}
+
+func (fe *ForExpression) expressionNode()      {}
+func (fe *ForExpression) TokenLiteral() string { return fe.Token.Literal }
+func (fe *ForExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString(fe.Token.Literal)
+	if fe.Init != nil {
+		out.WriteString(" ")
+		out.WriteString(fe.Init.String())
+	}
+	out.WriteString(" ")
+	out.WriteString(fe.Condition.String())
+	out.WriteString(".")
+	if fe.Step != nil {
+		out.WriteString(" ")
+		out.WriteString(fe.Step.String())
+	}
+	out.WriteString(" Wokege ")
+	out.WriteString(fe.Body.String())
+	out.WriteString(" Bedge")
+	return out.String()
+}

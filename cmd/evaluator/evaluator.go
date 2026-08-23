@@ -88,9 +88,50 @@ func eval(expr ast.Expression, env *Environment) Object {
 
 	case *ast.FunctionLiteral:
 		return &Function{Parameters: e.Parameters, Body: e.Body, Env: env}
+
+	case *ast.ForExpression:
+		return evalFor(e, env)
 	}
 
 	return &Error{Message: fmt.Sprintf("unknown expression: %T", expr)}
+}
+
+// evalFor runs a peepoJuice loop. The header clauses and the loop variable
+// live in one enclosed environment for the whole loop; each body iteration
+// gets a fresh child of it, mirroring how Hmmge scopes its blocks. The loop
+// itself evaluates to peepoSilence.
+func evalFor(node *ast.ForExpression, env *Environment) Object {
+	loopEnv := NewEnclosedEnvironment(env)
+
+	if node.Init != nil {
+		v := eval(node.Init, loopEnv)
+		if isError(v) {
+			return v
+		}
+	}
+
+	for {
+		cond := eval(node.Condition, loopEnv)
+		if isError(cond) {
+			return cond
+		}
+		b, ok := cond.(*Boolean)
+		if !ok {
+			return &Error{Message: fmt.Sprintf("peepoJuice condition must be NODDERS/NOPERS, got %s", cond.Type())}
+		}
+		if !b.Value {
+			return NULL
+		}
+
+		Eval(node.Body, NewEnclosedEnvironment(loopEnv))
+
+		if node.Step != nil {
+			v := eval(node.Step, loopEnv)
+			if isError(v) {
+				return v
+			}
+		}
+	}
 }
 
 // evalPrefix resolves a flat operator-first stream. Operators consume their
@@ -122,17 +163,6 @@ func evalPrefix(hunks []ast.Expression, env *Environment) Object {
 		case *ast.OperatorNode:
 			op := h.Operator
 			pos++
-			if op == "!" {
-				val := next()
-				if isError(val) {
-					return val
-				}
-				b, ok := val.(*Boolean)
-				if !ok {
-					return &Error{Message: fmt.Sprintf("peepoJuice needs a boolean, got %s", val.Type())}
-				}
-				return nativeBool(!b.Value)
-			}
 			if h.Token.Type == token.NEGATE {
 				val := next()
 				if isError(val) {
@@ -214,18 +244,8 @@ func evalPrefix(hunks []ast.Expression, env *Environment) Object {
 		return result
 	}
 
-	// peepoJuice is allowed to trail its operand: `NODDERS peepoJuice`.
-	for pos < len(hunks) {
-		op, ok := hunks[pos].(*ast.OperatorNode)
-		if !ok || op.Operator != "!" {
-			return &Error{Message: fmt.Sprintf("%d trailing operand(s) never got used", len(hunks)-pos)}
-		}
-		pos++
-		b, ok := result.(*Boolean)
-		if !ok {
-			return &Error{Message: fmt.Sprintf("peepoJuice needs a boolean, got %s", result.Type())}
-		}
-		result = nativeBool(!b.Value)
+	if pos < len(hunks) {
+		return &Error{Message: fmt.Sprintf("%d trailing operand(s) never got used", len(hunks)-pos)}
 	}
 	return result
 }

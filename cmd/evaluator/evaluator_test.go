@@ -152,10 +152,59 @@ func TestIfElse(t *testing.T) {
 	}
 }
 
-func TestNot(t *testing.T) {
-	_, evaluated := testEval(t, "NODDERS peepoJuice.")
-	if evaluated != FALSE {
-		t.Errorf("expected NOPERS, got %s", evaluated.Inspect())
+func TestForLoop(t *testing.T) {
+	input := `
+	PepoG total 0.
+	peepoJuice PepoG i 0. peepoLessThan i 5. peepoCookie i peepoFriendship i 1. Wokege
+		peepoCookie total peepoFriendship total i.
+	Bedge
+	total.
+	`
+	_, evaluated := testEval(t, input)
+	if evaluated.Inspect() != "10" {
+		t.Errorf("expected total == 10, got %s", evaluated.Inspect())
+	}
+}
+
+func TestForLoopWhileForm(t *testing.T) {
+	input := `
+	PepoG n 3.
+	peepoJuice peepoGreaterThan n 0. peepoCookie n PepegaCredit n 1. Wokege
+		peepoChat "tick".
+	Bedge
+	n.
+	`
+	_, evaluated := testEval(t, input)
+
+	if evaluated.Inspect() != "0" {
+		t.Errorf("expected countdown to leave n at 0, got %s", evaluated.Inspect())
+	}
+}
+
+func TestForLoopCountsDownWithStep(t *testing.T) {
+	input := `
+	PepoG last -1.
+	peepoJuice PepoG n 3. peepoGreaterThan n 0. peepoCookie n PepegaCredit n 1. Wokege
+		peepoChat n.
+	Bedge
+	`
+	_, evaluated := testEval(t, input)
+	if evaluated.Type() == ERROR_OBJ {
+		t.Fatalf("loop errored: %s", evaluated.Inspect())
+	}
+}
+
+func TestForLoopScoping(t *testing.T) {
+	input := `
+	peepoJuice PepoG i 0. peepoLessThan i 2. peepoCookie i peepoFriendship i 1. Wokege
+		NODDERS.
+	Bedge
+	i.
+	`
+	_, evaluated := testEval(t, input)
+	err, ok := evaluated.(*Error)
+	if !ok || !contains(err.Message, "identifier not found: i") {
+		t.Errorf("expected loop variable to stay scoped, got %v", evaluated.Inspect())
 	}
 }
 
@@ -183,6 +232,7 @@ func TestErrors(t *testing.T) {
 		{"missing.", "identifier not found: missing"},
 		{"add 1 2.", "identifier not found: add"},
 		{"PepoG five 5. peepoFriendship five.", "ran out of operands"},
+		{"peepoJuice 1. Wokege NOPERS. Bedge", "peepoJuice condition must be NODDERS/NOPERS"},
 	}
 
 	for _, tt := range tests {

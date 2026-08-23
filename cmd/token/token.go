@@ -28,7 +28,6 @@ const (
 	EQUAL       = "EQUAL"
 	LESSTHAN    = "LESSTHAN"
 	GREATERTHAN = "GREATERTHAN"
-	NOT         = "NOT"
 
 	COMMA    = "COMMA"
 	FULLSTOP = "FULLSTOP"
@@ -45,6 +44,7 @@ const (
 	LET      = "LET"
 	IF       = "IF"
 	ELSE     = "ELSE"
+	FOR      = "FOR"
 )
 
 var keywords = map[string]TokenType{
@@ -61,8 +61,7 @@ var keywords = map[string]TokenType{
 	"peepoLessThan":    LESSTHAN,
 	"peepoGreaterThan": GREATERTHAN,
 
-	"Scoots":     EQUAL,
-	"peepoJuice": NOT,
+	"Scoots": EQUAL,
 
 	"SadgeBusiness": FUNCTION,
 	"PepoG":         LET,
@@ -72,6 +71,8 @@ var keywords = map[string]TokenType{
 
 	"Hmmge":      IF,
 	"peepoShrug": ELSE,
+
+	"peepoJuice": FOR,
 }
 
 // Keywords returns the language keyword literals in a stable order.
