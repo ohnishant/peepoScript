@@ -314,6 +314,63 @@ func TestLoopBodyErrorsStopTheLoop(t *testing.T) {
 	}
 }
 
+// TestListEqualityNotStructural pins current behavior tracked in #28:
+// equals() has no Array case, so even identical lists compare NOPERS.
+// When structural equality lands, flip this to expect TRUE.
+func TestListEqualityNotStructural(t *testing.T) {
+	input := `
+	PepoG xs Thinking1 1, 2 Thinking2.
+	PepoG ys Thinking1 1, 2 Thinking2.
+	Scoots xs ys.
+	`
+	_, evaluated := testEval(t, input)
+	if evaluated != FALSE {
+		t.Errorf("expected identical lists to compare NOPERS (issue #28), got %s", evaluated.Inspect())
+	}
+}
+
+// TestIndexingCallResults pins how index hunks interact with calls,
+// tracked in #29. Zero-arity calls return a value the index applies to;
+// higher-arity calls try to consume the raw IndexNode hunk as an
+// argument, which currently surfaces as an "unknown expression" error.
+// Both halves need revisiting when #29 is decided.
+func TestIndexingCallResults(t *testing.T) {
+	zeroArity := `
+	PepoG make SadgeBusiness Wokege Thinking1 7, 8 Thinking2 Bedge
+	make Thinking1 0 Thinking2.
+	`
+	_, evaluated := testEval(t, zeroArity)
+	if evaluated.Inspect() != "7" {
+		t.Errorf("expected zero-arity call result to be indexable at 7, got %s", evaluated.Inspect())
+	}
+
+	higherArity := `
+	PepoG first SadgeBusiness x Wokege x Bedge
+	first Thinking1 0 Thinking2 5.
+	`
+	_, evaluated = testEval(t, higherArity)
+	err, ok := evaluated.(*Error)
+	if !ok {
+		t.Fatalf("expected arity>=1 call followed by an index to error, got %v", evaluated.Inspect())
+	}
+	if !contains(err.Message, "unknown expression") {
+		t.Errorf("expected unknown-expression error (issue #29), got %q", err.Message)
+	}
+}
+
+// TestStringIndexingUnsupported pins current behavior tracked in #30:
+// applyIndex rejects non-list targets rather than returning characters.
+func TestStringIndexingUnsupported(t *testing.T) {
+	_, evaluated := testEval(t, `"hello" Thinking1 0 Thinking2.`)
+	err, ok := evaluated.(*Error)
+	if !ok {
+		t.Fatalf("expected string indexing to error, got %v", evaluated.Inspect())
+	}
+	if !contains(err.Message, "indexing needs a list") {
+		t.Errorf("expected indexing-needs-a-list error (issue #30), got %q", err.Message)
+	}
+}
+
 func TestBlockScoping(t *testing.T) {
 	input := `
 	PepoG x 1.
