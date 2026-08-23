@@ -3,6 +3,14 @@ name: Release
 on:
   push:
     branches: [ "main" ]
+    # A release ships binaries built from Go source, so only cut one when
+    # the source or module graph moved. Docs-only pushes to main no longer
+    # burn a patch version. Use workflow_dispatch for manual releases.
+    paths:
+      - "**.go"
+      - go.mod
+      - go.sum
+  workflow_dispatch:
 
 permissions:
   contents: write
