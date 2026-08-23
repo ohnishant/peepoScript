@@ -26,3 +26,8 @@ go.work.sum
 
 # env file
 .env
+
+# playground build artifacts (scripts/build-web.sh)
+web/peepo.wasm
+web/wasm_exec.js
+web/peepo.png

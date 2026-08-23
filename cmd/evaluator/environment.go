@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 )
 
 type Environment struct {
@@ -30,6 +31,18 @@ func NewEnvironmentWithOut(out io.Writer) *Environment {
 func NewEnclosedEnvironment(outer *Environment) *Environment {
 	env := &Environment{store: make(map[string]Object), outer: outer}
 	return env
+}
+
+// Builtins returns the builtin function names in a stable order.
+// Hosts use it for completion and emote lookup alongside Keywords.
+func Builtins() []string {
+	set := newBuiltinSet(io.Discard)
+	names := make([]string, 0, len(set))
+	for name := range set {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }
 
 func (e *Environment) Get(name string) (Object, bool) {

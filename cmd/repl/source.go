@@ -4,6 +4,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/ohnishat/peepoScript/cmd/evaluator"
 	"github.com/ohnishat/peepoScript/cmd/token"
 )
 
@@ -35,7 +36,8 @@ func (s staticSource) Suggestions(prefix string) []string {
 	return matches
 }
 
-// newTokenSource returns the default source backed by the language keywords.
+// newTokenSource returns the default source backed by the language
+// keywords and builtin function names.
 func newTokenSource() Source {
-	return staticSource{words: token.Keywords()}
+	return staticSource{words: append(token.Keywords(), evaluator.Builtins()...)}
 }

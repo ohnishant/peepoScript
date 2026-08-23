@@ -149,12 +149,14 @@ func TestIntegrationTabCompletesKeyword(t *testing.T) {
 func TestIntegrationTabCompletionIsCaseInsensitive(t *testing.T) {
 	s := startREPL(t)
 
-	s.send("PEEPOC\t")
+	// "peepoC" is ambiguous now that builtins complete too (peepoChat),
+	// so use the longer prefix that only peepoCookie matches.
+	s.send("PEEPOCO\t")
 	// The terminal echoes our uppercase keystrokes, then the completer
 	// appends the suffix in the keyword's real casing. Seeing
-	// "PEEPOCookie" in one piece proves both halves: the prefix matched
+	// "PEEPOCOokie" in one piece proves both halves: the prefix matched
 	// case-insensitively and the insertion came out correctly spelled.
-	s.waitFor(t, "PEEPOCookie")
+	s.waitFor(t, "PEEPOCOokie")
 }
 
 func TestIntegrationTabListsCandidatesForAmbiguousPrefix(t *testing.T) {
@@ -165,6 +167,7 @@ func TestIntegrationTabListsCandidatesForAmbiguousPrefix(t *testing.T) {
 	// shared prefix when rendering, hence the bare suffixes. None of
 	// these words appear in what we typed.
 	s.send("peepo\t")
+	s.waitFor(t, "Chat")
 	s.waitFor(t, "Cookie")
 	s.waitFor(t, "Juice")
 	s.waitFor(t, "Shrug")

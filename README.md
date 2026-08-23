@@ -17,6 +17,19 @@ go build -o peepo .
 ./peepo
 ```
 
+### Browser playground
+
+The interpreter also compiles to WebAssembly and runs on a static page: editor on the left with twitch-style tab completion, output panel on the right, and language keywords plus builtins vendored as 7tv emotes so they render as actual emotes while you type.
+
+Build the wasm bundle and serve the page locally:
+
+```sh
+./scripts/build-web.sh
+cd web && python3 -m http.server 8080
+```
+
+Pushes to `main` deploy the playground to GitHub Pages automatically (`.github/workflows/pages.yml`).
+
 ### REPL
 
 With no arguments the binary starts the REPL:
@@ -31,7 +44,7 @@ Peepo Script - 0.1.0 | REPL
 
 Statements end with a fullstop. The result of the last expression gets printed back at you, which doubles as your print statement when you just want to check something.
 
-In an interactive terminal, Tab completes language keywords. Type `peepoC` and hit Tab to get `peepoCookie`:
+In an interactive terminal, Tab completes language keywords and builtins. Type `peepoCo` and hit Tab to get `peepoCookie`:
 
 Blocks open with `Wokege` and close with `Bedge`. If you hit enter before closing one, the REPL drops to a `...` prompt and keeps reading until the block is done:
 
@@ -84,6 +97,15 @@ The plan is to compile the interpreter to WASM so scripts can run on a webpage (
 ## The language
 
 Expressions are written operator-first: the operator comes before its operands. `peepoFriendship 1 2` means `1 + 2`, and calling a function is just writing its name followed by arguments. That is also why blocks don't need parentheses around conditions.
+
+### Comments
+
+`#` starts a comment; everything up to the end of the line is ignored.
+
+```
+PepoG x 10.  # declare
+# this whole line is a comment
+```
 
 ### Bindings
 
