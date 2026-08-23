@@ -105,3 +105,11 @@ PepoG result add add 1 2 3.   # 6
 ```sh
 go test ./...
 ```
+
+One command runs everything, in two layers:
+
+**Unit tests** cover the lexer, parser, evaluator, and the completer logic in isolation. Fast, no terminal needed.
+
+**Integration tests** (`cmd/repl/repl_integration_test.go`) drive the compiled binary through a real pseudo-terminal: they type partial keywords, press Tab, and assert on what the REPL renders back. These exist because the bugs that actually break autocomplete — readline losing its completer, a zero-width terminal silently disabling completion, raw-mode key handling regressing — are invisible to unit tests. A completed keyword appearing in the output is genuine proof, since the tests only ever type a prefix.
+
+Requirements for the integration layer: a Linux kernel with `/dev/ptmx` (the pty plumbing lives in `cmd/repl/pty_linux_test.go`) and a Go toolchain on PATH to build the binary. Everywhere else those tests skip themselves, so `go test ./...` stays green on any machine. GitHub's Ubuntu CI runners satisfy both requirements out of the box — no extra workflow config is needed; if autocomplete ever breaks for real users, these tests fail the build.
