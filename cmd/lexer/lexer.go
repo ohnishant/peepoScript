@@ -42,8 +42,13 @@ func (l *Lexer) NextToken() token.Token {
 	case '.':
 		tok = newToken(token.FULLSTOP, l.ch)
 	case '"':
-		tok.Type = token.STRING
-		tok.Literal = l.readString()
+		literal, closed := l.readString()
+		if closed {
+			tok.Type = token.STRING
+		} else {
+			tok.Type = token.ILLEGAL
+		}
+		tok.Literal = literal
 	case 0:
 		tok.Literal = ""
 		tok.Type = token.EOF
@@ -65,13 +70,13 @@ func (l *Lexer) NextToken() token.Token {
 	return tok
 }
 
-func (l *Lexer) readString() string {
+func (l *Lexer) readString() (string, bool) {
 	l.readChar()
 	position := l.position
-	for l.ch != '"' {
+	for l.ch != '"' && l.ch != 0 {
 		l.readChar()
 	}
-	return l.input[position:l.position]
+	return l.input[position:l.position], l.ch == '"'
 }
 
 func (l *Lexer) skipWhitespace() {

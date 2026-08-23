@@ -38,6 +38,73 @@ func TestNextToken_1(t *testing.T) {
 		}
 	}
 }
+
+func TestNextTokenUnterminatedString(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  []token.Token
+	}{
+		{
+			name:  "text then end of input",
+			input: `"oops`,
+			want: []token.Token{
+				{Type: token.ILLEGAL, Literal: "oops"},
+				{Type: token.EOF, Literal: ""},
+			},
+		},
+		{
+			name:  "only an opening quote",
+			input: `"`,
+			want: []token.Token{
+				{Type: token.ILLEGAL, Literal: ""},
+				{Type: token.EOF, Literal: ""},
+			},
+		},
+		{
+			name:  "mid-program",
+			input: `PepoG x "oops.`,
+			want: []token.Token{
+				{Type: token.LET, Literal: "PepoG"},
+				{Type: token.IDENT, Literal: "x"},
+				{Type: token.ILLEGAL, Literal: "oops."},
+				{Type: token.EOF, Literal: ""},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := New(tt.input)
+			for i, want := range tt.want {
+				tok := l.NextToken()
+
+				if tok.Type != want.Type {
+					t.Fatalf("tests[%d] - wrong token type. Expected %q got %q", i, want.Type, tok.Type)
+				}
+
+				if tok.Literal != want.Literal {
+					t.Fatalf("tests[%d] - wrong token literal. Expected %q got %q", i, want.Literal, tok.Literal)
+				}
+			}
+		})
+	}
+}
+
+// A regression here used to spin forever instead of returning, so pull a few
+// tokens past the bad input and make sure every call comes back as EOF.
+func TestNextTokenKeepsReturningEOFAfterUnterminatedString(t *testing.T) {
+	l := New(`"oops`)
+	l.NextToken() // ILLEGAL
+
+	for i := 0; i < 5; i++ {
+		tok := l.NextToken()
+		if tok.Type != token.EOF {
+			t.Fatalf("call %d - expected EOF got %q (%q)", i, tok.Type, tok.Literal)
+		}
+	}
+}
+
 func TestNextTokenComplex_1(t *testing.T) {
 	input := `
 	PepoG ten 10.
