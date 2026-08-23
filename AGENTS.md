@@ -1,5 +1,12 @@
 # AGENTS.md
 
+## Docs
+
+- Navigating the module layout, tracing the source-to-output pipeline,
+  or adding a language feature: docs/architecture.md
+- Changing or debugging tests, especially the pty REPL integration
+  layer: docs/testing.md
+
 ## Language design
 
 peepoScript keywords and messages lean on Twitch emote names. When a
