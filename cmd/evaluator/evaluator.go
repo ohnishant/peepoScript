@@ -59,6 +59,17 @@ func eval(expr ast.Expression, env *Environment) Object {
 	case *ast.BooleanLiteral:
 		return nativeBool(e.Value)
 
+	case *ast.ArrayLiteral:
+		elements := make([]Object, 0, len(e.Elements))
+		for _, elem := range e.Elements {
+			v := eval(elem, env)
+			if isError(v) {
+				return v
+			}
+			elements = append(elements, v)
+		}
+		return &Array{Elements: elements}
+
 	case *ast.Identifier:
 		val, ok := env.Get(e.Value)
 		if !ok {
@@ -88,20 +99,93 @@ func eval(expr ast.Expression, env *Environment) Object {
 
 	case *ast.FunctionLiteral:
 		return &Function{Parameters: e.Parameters, Body: e.Body, Env: env}
+
+	case *ast.ForExpression:
+		return evalFor(e, env)
 	}
 
 	return &Error{Message: fmt.Sprintf("unknown expression: %T", expr)}
 }
 
+// evalFor runs a peepoJuice loop. The header clauses and the loop variable
+// live in one enclosed environment for the whole loop; each body iteration
+// gets a fresh child of it, mirroring how Hmmge scopes its blocks. The loop
+// itself evaluates to peepoSilence.
+func evalFor(node *ast.ForExpression, env *Environment) Object {
+	loopEnv := NewEnclosedEnvironment(env)
+
+	if node.Init != nil {
+		v := eval(node.Init, loopEnv)
+		if isError(v) {
+			return v
+		}
+	}
+
+	for {
+		cond := eval(node.Condition, loopEnv)
+		if isError(cond) {
+			return cond
+		}
+		b, ok := cond.(*Boolean)
+		if !ok {
+			return &Error{Message: fmt.Sprintf("peepoJuice condition must be NODDERS/NOPERS, got %s", cond.Type())}
+		}
+		if !b.Value {
+			return NULL
+		}
+
+		bodyResult := Eval(node.Body, NewEnclosedEnvironment(loopEnv))
+		if isError(bodyResult) {
+			return bodyResult
+		}
+
+		if node.Step != nil {
+			v := eval(node.Step, loopEnv)
+			if isError(v) {
+				return v
+			}
+		}
+	}
+}
+
 // evalPrefix resolves a flat operator-first stream. Operators consume their
 // operands by recursion; an identifier bound to something callable consumes
 // as many operands as its arity demands. That is the whole trick behind not
-// needing Wokege and Bedge around every expression.
+// needing Wokege and Bedge around every expression. Index hunks
+// (Thinking1 ... Thinking2) apply to whatever the preceding operand
+// evaluated to.
 func evalPrefix(hunks []ast.Expression, env *Environment) Object {
 	pos := 0
 
+	var primary func() Object
 	var next func() Object
+
+	// next evaluates one operand and then applies any index hunks that
+	// trail it, so `xs Thinking1 0 Thinking2` chains like a postfix.
 	next = func() Object {
+		v := primary()
+		if isError(v) {
+			return v
+		}
+		for pos < len(hunks) {
+			idxNode, ok := hunks[pos].(*ast.IndexNode)
+			if !ok {
+				break
+			}
+			pos++
+			idx := eval(idxNode.Index, env)
+			if isError(idx) {
+				return idx
+			}
+			v = applyIndex(v, idx)
+			if isError(v) {
+				return v
+			}
+		}
+		return v
+	}
+
+	primary = func() Object {
 		if pos >= len(hunks) {
 			return &Error{Message: "expression ran out of operands"}
 		}
@@ -119,20 +203,13 @@ func evalPrefix(hunks []ast.Expression, env *Environment) Object {
 			pos++
 			return nativeBool(h.Value)
 
+		case *ast.ArrayLiteral:
+			pos++
+			return eval(h, env)
+
 		case *ast.OperatorNode:
 			op := h.Operator
 			pos++
-			if op == "!" {
-				val := next()
-				if isError(val) {
-					return val
-				}
-				b, ok := val.(*Boolean)
-				if !ok {
-					return &Error{Message: fmt.Sprintf("peepoJuice needs a boolean, got %s", val.Type())}
-				}
-				return nativeBool(!b.Value)
-			}
 			if h.Token.Type == token.NEGATE {
 				val := next()
 				if isError(val) {
@@ -214,18 +291,8 @@ func evalPrefix(hunks []ast.Expression, env *Environment) Object {
 		return result
 	}
 
-	// peepoJuice is allowed to trail its operand: `NODDERS peepoJuice`.
-	for pos < len(hunks) {
-		op, ok := hunks[pos].(*ast.OperatorNode)
-		if !ok || op.Operator != "!" {
-			return &Error{Message: fmt.Sprintf("%d trailing operand(s) never got used", len(hunks)-pos)}
-		}
-		pos++
-		b, ok := result.(*Boolean)
-		if !ok {
-			return &Error{Message: fmt.Sprintf("peepoJuice needs a boolean, got %s", result.Type())}
-		}
-		result = nativeBool(!b.Value)
+	if pos < len(hunks) {
+		return &Error{Message: fmt.Sprintf("%d trailing operand(s) never got used", len(hunks)-pos)}
 	}
 	return result
 }
@@ -290,6 +357,22 @@ func applyInfix(op string, left, right Object) Object {
 	}
 
 	return &Error{Message: fmt.Sprintf("unknown operator: %s", op)}
+}
+
+// applyIndex resolves one Thinking1 index Thinking2 against a target.
+func applyIndex(target, index Object) Object {
+	arr, ok := target.(*Array)
+	if !ok {
+		return &Error{Message: fmt.Sprintf("indexing needs a list, got %s", target.Type())}
+	}
+	i, ok := index.(*Integer)
+	if !ok {
+		return &Error{Message: fmt.Sprintf("list index must be an integer, got %s", index.Type())}
+	}
+	if i.Value < 0 || i.Value >= int64(len(arr.Elements)) {
+		return &Error{Message: fmt.Sprintf("index out of range: %d, list length is %d", i.Value, len(arr.Elements))}
+	}
+	return arr.Elements[i.Value]
 }
 
 func equals(left, right Object) Object {

@@ -53,9 +53,26 @@ func (e *Environment) Get(name string) (Object, bool) {
 	return obj, ok
 }
 
+// Set binds name to val. When name already exists in an enclosing scope,
+// the binding closest to where the assignment happens is updated, so loop
+// bodies and blocks can mutate variables they can read. Genuinely new
+// names bind locally.
 func (e *Environment) Set(name string, val Object) Object {
-	e.store[name] = val
+	if !e.rebind(name, val) {
+		e.store[name] = val
+	}
 	return val
+}
+
+func (e *Environment) rebind(name string, val Object) bool {
+	if _, ok := e.store[name]; ok {
+		e.store[name] = val
+		return true
+	}
+	if e.outer != nil {
+		return e.outer.rebind(name, val)
+	}
+	return false
 }
 
 func notFound(name string) *Error {

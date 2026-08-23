@@ -13,7 +13,9 @@ A scripting language made for ![peepo](assets/peepo.png) by ![peepo](assets/peep
   - [Bindings](#bindings)
   - [Operators](#operators)
   - [Booleans and conditionals](#booleans-and-conditionals)
+  - [Loops](#loops)
   - [Functions](#functions)
+  - [Lists](#lists)
   - [Builtins](#builtins)
 - [Examples](#examples)
 - [Project layout](#project-layout)
@@ -138,7 +140,6 @@ peepoCookie answer 43.    # assign
 | `peepoLessThan`    | less than    |
 | `peepoGreaterThan` | greater than |
 | `Scoots`           | equality     |
-| `peepoJuice`       | not          |
 
 Operators nest freely, so `mitosis peepoFriendship 1 2 3` is `(1 + 2) * 3`.
 
@@ -154,6 +155,21 @@ Bedge peepoShrug Wokege
 Bedge
 ```
 
+### Loops
+
+`peepoJuice` runs a `Wokege`/`Bedge` block while its condition holds. The init and step clauses are optional `PepoG` or `peepoCookie` statements; leave both out and the loop is a plain while. Assignments reach the scope a variable was declared in, so the body can accumulate into outer bindings.
+
+```
+peepoJuice PepoG i 0. peepoLessThan i 3. peepoCookie i peepoFriendship i 1. Wokege
+    peepoChat i.
+Bedge
+
+PepoG n 3.
+peepoJuice peepoGreaterThan n 0. peepoCookie n PepegaCredit n 1. Wokege
+    peepoChat n.
+Bedge
+```
+
 ### Functions
 
 Functions are values. The body evaluates to whatever its last expression produces, so there is no return keyword.
@@ -163,13 +179,26 @@ PepoG add SadgeBusiness a b Wokege
     peepoFriendship a b.
 Bedge
 
-PepoG result add add 1 2 3.   # 6
+PepoG result add 40 2.   # 6
 ```
+
+### Lists
+
+`Thinking1` opens a list and `Thinking2` closes it, for both literals and indexing.
+
+```
+PepoG xs Thinking1 3, 1, 4 Thinking2.
+peepoChat xs.                          # [3, 1, 4]
+peepoChat xs Thinking1 0 Thinking2.    # 3
+peepoChat peepoMeasure xs.             # 3
+```
+
+Lists nest freely; chain the brackets to dig into them: `grid Thinking1 1 Thinking2 Thinking1 0 Thinking2`. Indexing out of range or with a non-integer is a runtime error. Combine with `peepoJuice` to walk a list: see [examples/lists.peepo](examples/lists.peepo).
 
 ### Builtins
 
 - `peepoChat arg1 arg2 ...` prints its arguments separated by spaces.
-- `peepoMeasure str` returns the length of a string.
+- `peepoMeasure str` returns the length of a string or a list.
 
 ## Project layout
 

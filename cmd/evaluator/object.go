@@ -2,6 +2,7 @@ package evaluator
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ohnishat/peepoScript/cmd/ast"
 )
@@ -15,6 +16,7 @@ const (
 	NULL_OBJ     = "NULL"
 	FUNCTION_OBJ = "FUNCTION"
 	BUILTIN_OBJ  = "BUILTIN"
+	ARRAY_OBJ    = "ARRAY"
 	ERROR_OBJ    = "ERROR"
 )
 
@@ -53,6 +55,24 @@ type String struct {
 
 func (s *String) Type() ObjectType { return STRING_OBJ }
 func (s *String) Inspect() string  { return s.Value }
+
+type Array struct {
+	Elements []Object
+}
+
+func (a *Array) Type() ObjectType { return ARRAY_OBJ }
+func (a *Array) Inspect() string {
+	var out strings.Builder
+	out.WriteString("[")
+	for i, e := range a.Elements {
+		if i > 0 {
+			out.WriteString(", ")
+		}
+		out.WriteString(e.Inspect())
+	}
+	out.WriteString("]")
+	return out.String()
+}
 
 type Error struct {
 	Message string

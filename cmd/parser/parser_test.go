@@ -19,7 +19,6 @@ func TestParseExpressions(t *testing.T) {
 		{"peepoBye 10 mitosis 2 2.", "peepoBye 10 mitosis 2 2"},
 		{"Scoots five 5.", "Scoots five 5"},
 		{"peepoLessThan five 20.", "peepoLessThan five 20"},
-		{"NODDERS peepoJuice.", "NODDERS peepoJuice"},
 		{"add five ten.", "add five ten"},
 		{"add add 1 2 3.", "add add 1 2 3"},
 	}
@@ -85,6 +84,55 @@ func TestParseFunctionLiteral(t *testing.T) {
 	}
 }
 
+func TestParseFor(t *testing.T) {
+	input := `peepoJuice PepoG i 0. peepoLessThan i 3. peepoCookie i peepoFriendship i 1. Wokege
+		peepoChat i.
+	Bedge`
+
+	program, errors := Parse(input)
+	if len(errors) > 0 {
+		t.Fatalf("unexpected parser errors %v", errors)
+	}
+
+	forExpr, ok := program.Expressions[0].(*ast.ForExpression)
+	if !ok {
+		t.Fatalf("expected *ast.ForExpression, got %T", program.Expressions[0])
+	}
+	if forExpr.Init == nil || forExpr.Step == nil {
+		t.Fatal("expected init and step clauses")
+	}
+	if forExpr.Condition.String() != "peepoLessThan i 3" {
+		t.Errorf("wrong condition: %s", forExpr.Condition.String())
+	}
+	want := "peepoJuice PepoG i 0. peepoLessThan i 3. peepoCookie i peepoFriendship i 1. Wokege peepoChat i Bedge"
+	if got := program.String(); got != want {
+		t.Errorf("round-trip mismatch:\nwant %q\ngot  %q", want, got)
+	}
+}
+
+func TestParseForWhileForm(t *testing.T) {
+	input := `PepoG n 3.
+	peepoJuice n peepoGreaterThan 0. Wokege
+		peepoCookie n PepegaCredit n 1.
+	Bedge`
+
+	program, errors := Parse(input)
+	if len(errors) > 0 {
+		t.Fatalf("unexpected parser errors %v", errors)
+	}
+
+	forExpr, ok := program.Expressions[1].(*ast.ForExpression)
+	if !ok {
+		t.Fatalf("expected *ast.ForExpression, got %T", program.Expressions[1])
+	}
+	if forExpr.Init != nil || forExpr.Step != nil {
+		t.Error("while form should have no init or step")
+	}
+	if forExpr.TokenLiteral() != "peepoJuice" {
+		t.Errorf("expected peepoJuice token, got %s", forExpr.TokenLiteral())
+	}
+}
+
 func TestParseIfElse(t *testing.T) {
 	input := "Hmmge peepoLessThan five 20 Wokege NODDERS Bedge peepoShrug Wokege NOPERS Bedge"
 
@@ -105,17 +153,67 @@ func TestParseIfElse(t *testing.T) {
 	}
 }
 
-func TestParserErrors(t *testing.T) {
+func TestParseLists(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"Thinking1 Thinking2.", "Thinking1 Thinking2"},
+		{"Thinking1 1, 2, 3 Thinking2.", "Thinking1 1, 2, 3 Thinking2"},
+		{"Thinking1 1, Thinking1 2, 3 Thinking2 Thinking2.", "Thinking1 1, Thinking1 2, 3 Thinking2 Thinking2"},
+		{"PepoG xs Thinking1 1, 2 Thinking2.", "PepoG xs Thinking1 1, 2 Thinking2."},
+		{"peepoChat xs Thinking1 0 Thinking2.", "peepoChat xs Thinking1 0 Thinking2"},
+		{"peepoChat xs Thinking1 0 Thinking2 Thinking1 1 Thinking2.", "peepoChat xs Thinking1 0 Thinking2 Thinking1 1 Thinking2"},
+		{"peepoFriendship xs Thinking1 0 Thinking2 1.", "peepoFriendship xs Thinking1 0 Thinking2 1"},
+	}
+
+	for _, tt := range tests {
+		program, errors := Parse(tt.input)
+		if len(errors) > 0 {
+			t.Fatalf("input %q: unexpected parser errors %v", tt.input, errors)
+		}
+		if got := program.String(); got != tt.expected {
+			t.Errorf("input %q:\nwant %q\ngot  %q", tt.input, tt.expected, got)
+		}
+	}
+}
+
+func TestParseListErrors(t *testing.T) {
 	tests := []string{
-		"PepoG",
-		"Wokege NODDERS",
-		"@#$%",
+		"Thinking1 1, 2.",
 	}
 
 	for _, input := range tests {
 		_, errors := Parse(input)
 		if len(errors) == 0 {
 			t.Errorf("input %q: expected parser errors, got none", input)
+		}
+	}
+}
+
+func TestParserErrors(t *testing.T) {
+	tests := []string{
+		"PepoG",
+		"Wokege NODDERS",
+		"@#$%",
+		"peepoJuice PepoG i 0 i peepoLessThan 3. Wokege NODDERS. Bedge",
+		"peepoJuice peepoLessThan 1 2 Wokege NODDERS. Bedge",
+		"peepoJuice peepoLessThan 1 2. peepoChat 1. Wokege NOPERS. Bedge",
+	}
+
+	for _, input := range tests {
+		_, errors := Parse(input)
+		if len(errors) == 0 {
+			t.Errorf("input %q: expected parser errors, got none", input)
+		}
+	}
+}
+
+func TestParseIndexContinuationError(t *testing.T) {
+	_, errors := Parse("PepoG xs Thinking1 1 Thinking2. xs Thinking1 0")
+	for _, err := range errors {
+		if err != "Sadge... missing Thinking2 before end of input" {
+			t.Errorf("expected missing-Thinking2 error, got %q", err)
 		}
 	}
 }

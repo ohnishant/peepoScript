@@ -12,6 +12,8 @@ func TestKeywordsReturnsEveryKeywordSorted(t *testing.T) {
 		"PepoG",
 		"SadgeBusiness",
 		"Scoots",
+		"Thinking1",
+		"Thinking2",
 		"Wokege",
 		"mitosis",
 		"peepoBye",

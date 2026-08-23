@@ -17,13 +17,14 @@ const PROMPT = ">> "
 const CONTINUATION_PROMPT = "... "
 
 // isIncomplete reports whether every parser error means "keep reading":
-// blocks must close with Bedge on a later line.
+// blocks must close with Bedge on a later line, list literals with
+// Thinking2.
 func isIncomplete(errors []string) bool {
 	if len(errors) == 0 {
 		return false
 	}
 	for _, err := range errors {
-		if !strings.Contains(err, "missing Bedge") {
+		if !strings.Contains(err, "missing Bedge") && !strings.Contains(err, "missing Thinking2") {
 			return false
 		}
 	}

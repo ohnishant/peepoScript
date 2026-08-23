@@ -39,3 +39,22 @@ func TestRuneCompleterNoMatches(t *testing.T) {
 		t.Errorf("expected no suggestions for zzz, got %v", items)
 	}
 }
+
+func TestIsIncomplete(t *testing.T) {
+	tests := []struct {
+		errors []string
+		want   bool
+	}{
+		{nil, false},
+		{[]string{"Sadge... missing Bedge before end of input"}, true},
+		{[]string{"Sadge... missing Thinking2 before end of input"}, true},
+		{[]string{"Sadge... missing Bedge before end of input", "Sadge... missing Thinking2 before end of input"}, true},
+		{[]string{"Sadge... expected ., got \"peepoJuice\" instead"}, false},
+	}
+
+	for _, tt := range tests {
+		if got := isIncomplete(tt.errors); got != tt.want {
+			t.Errorf("isIncomplete(%v) = %v, want %v", tt.errors, got, tt.want)
+		}
+	}
+}
