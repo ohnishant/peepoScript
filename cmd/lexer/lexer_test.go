@@ -43,44 +43,32 @@ func TestNextTokenUnterminatedString(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
-		want  []struct {
-			expectedType    token.TokenType
-			expectedLiteral string
-		}
+		want  []token.Token
 	}{
 		{
 			name:  "text then end of input",
 			input: `"oops`,
-			want: []struct {
-				expectedType    token.TokenType
-				expectedLiteral string
-			}{
-				{token.ILLEGAL, "oops"},
-				{token.EOF, ""},
+			want: []token.Token{
+				{Type: token.ILLEGAL, Literal: "oops"},
+				{Type: token.EOF, Literal: ""},
 			},
 		},
 		{
 			name:  "only an opening quote",
 			input: `"`,
-			want: []struct {
-				expectedType    token.TokenType
-				expectedLiteral string
-			}{
-				{token.ILLEGAL, ""},
-				{token.EOF, ""},
+			want: []token.Token{
+				{Type: token.ILLEGAL, Literal: ""},
+				{Type: token.EOF, Literal: ""},
 			},
 		},
 		{
 			name:  "mid-program",
 			input: `PepoG x "oops.`,
-			want: []struct {
-				expectedType    token.TokenType
-				expectedLiteral string
-			}{
-				{token.LET, "PepoG"},
-				{token.IDENT, "x"},
-				{token.ILLEGAL, "oops."},
-				{token.EOF, ""},
+			want: []token.Token{
+				{Type: token.LET, Literal: "PepoG"},
+				{Type: token.IDENT, Literal: "x"},
+				{Type: token.ILLEGAL, Literal: "oops."},
+				{Type: token.EOF, Literal: ""},
 			},
 		},
 	}
@@ -89,14 +77,14 @@ func TestNextTokenUnterminatedString(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			l := New(tt.input)
 			for i, want := range tt.want {
-				var tok token.Token = l.NextToken()
+				tok := l.NextToken()
 
-				if tok.Type != want.expectedType {
-					t.Fatalf("tests[%d] - wrong token type. Expected %q got %q", i, want.expectedType, tok.Type)
+				if tok.Type != want.Type {
+					t.Fatalf("tests[%d] - wrong token type. Expected %q got %q", i, want.Type, tok.Type)
 				}
 
-				if tok.Literal != want.expectedLiteral {
-					t.Fatalf("tests[%d] - wrong token literal. Expected %q got %q", i, want.expectedLiteral, tok.Literal)
+				if tok.Literal != want.Literal {
+					t.Fatalf("tests[%d] - wrong token literal. Expected %q got %q", i, want.Literal, tok.Literal)
 				}
 			}
 		})
