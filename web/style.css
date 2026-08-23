@@ -1,3 +1,21 @@
+/* Hack is vendored in fonts/ (MIT, see LICENSE.md there) so the
+   editor renders identically offline. */
+@font-face {
+  font-family: "Hack";
+  src: url("fonts/hack-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Hack";
+  src: url("fonts/hack-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --bg: #0e0e10;
   --panel: #18181b;
@@ -97,7 +115,7 @@ main {
   overflow-y: auto;
   white-space: pre-wrap;
   word-break: break-word;
-  font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  font-family: "Hack", ui-monospace, "Cascadia Code", "JetBrains Mono", monospace;
   font-size: 0.95rem;
   line-height: 1.55;
   outline: none;
@@ -133,7 +151,7 @@ main {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.35rem 0.75rem;
-  font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  font-family: "Hack", ui-monospace, "Cascadia Code", "JetBrains Mono", monospace;
   font-size: 0.9rem;
   cursor: pointer;
 }
@@ -177,7 +195,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   flex: 1;
   padding: 0.9rem;
   overflow-y: auto;
-  font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  font-family: "Hack", ui-monospace, "Cascadia Code", "JetBrains Mono", monospace;
   font-size: 0.95rem;
   line-height: 1.55;
   white-space: pre-wrap;
