@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.22'
+
+    - name: Compute next version
+      id: version
+      run: |
+        last_tag=$(git describe --tags --abbrev=0 2>/dev/null || true)
+        if [ -z "$last_tag" ]; then
+          next="v0.1.0"
+        else
+          major=$(echo "$last_tag" | sed 's/^v//' | cut -d. -f1)
+          minor=$(echo "$last_tag" | sed 's/^v//' | cut -d. -f2)
+          patch=$(echo "$last_tag" | sed 's/^v//' | cut -d. -f3)
+
+          bump=patch
+          if git log "$last_tag"..HEAD | grep -q 'BREAKING CHANGE' \
+             || git log "$last_tag"..HEAD --format=%s | grep -Eq '^[a-z]+(\([^)]*\))?!:'; then
+            bump=major
+          elif git log "$last_tag"..HEAD --format=%s | grep -q '^feat'; then
+            bump=minor
+          fi
+
+          case $bump in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+          esac
+          next="v$major.$minor.$patch"
+        fi
+
+        echo "version=$next" >> "$GITHUB_OUTPUT"
+        echo "Next version: $next"
+
+    - name: Test
+      run: go test ./...
+
+    - name: Build binaries
+      run: |
+        mkdir -p dist
+        for target in linux/amd64 darwin/amd64 darwin/arm64 windows/amd64; do
+          os=${target%/*}; arch=${target#*/}
+          name=peepo-$os-$arch
+          [ $os = windows ] && name=$name.exe
+          GOOS=$os GOARCH=$arch CGO_ENABLED=0 go build -trimpath \
+            -ldflags "-s -w" -o dist/$name .
+        done
+
+    - name: Create release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        gh release create "${{ steps.version.outputs.version }}" dist/* \
+          --title "${{ steps.version.outputs.version }}" \
+          --target "$GITHUB_SHA" \
+          --generate-notes
