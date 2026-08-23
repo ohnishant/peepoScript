@@ -265,16 +265,35 @@ function setCaretOffset(offset) {
 }
 
 // Rebuilds the DOM from source text, swapping exact emote-name words
-// for their images. Identifiers split on everything non-word-like, so
+// for their images and wrapping string literals in a colored span.
+// Identifiers split on everything non-word-like, so
 // `peepoChat "Wokege".` renders inside the string quotes too.
 function buildEditorFragment(src) {
   const frag = document.createDocumentFragment();
-  for (const part of src.split(/([A-Za-z0-9_]+)/)) {
+  // Strings run quote to quote with no escapes and no newline stop,
+  // mirroring the lexer's readString. Unterminated quotes stay lit to
+  // the end of input because that is exactly what readString will
+  // swallow as ILLEGAL.
+  for (const part of src.split(/("[^"]*(?:"|$))/)) {
     if (!part) continue;
-    if (emotes.has(part)) frag.append(makeEmoteImg(part));
-    else frag.append(part);
+    if (part.startsWith('"')) {
+      const span = document.createElement("span");
+      span.className = "str";
+      appendEmoteParts(span, part);
+      frag.append(span);
+    } else {
+      appendEmoteParts(frag, part);
+    }
   }
   return frag;
+}
+
+function appendEmoteParts(root, text) {
+  for (const part of text.split(/([A-Za-z0-9_]+)/)) {
+    if (!part) continue;
+    if (emotes.has(part)) root.append(makeEmoteImg(part));
+    else root.append(part);
+  }
 }
 
 function setEditorSource(src, caretOffset) {

@@ -26,6 +26,7 @@
   --accent-dim: #6441a5;
   --error: #ff6b6b;
   --ok: #57d98d;
+  --string: #e6b455;
 }
 
 * { box-sizing: border-box; }
@@ -124,6 +125,8 @@ main {
 }
 
 #editor:focus { background: #1c1c21; }
+
+#editor .str { color: var(--string); }
 
 #editor img.emote,
 #output img.emote {
