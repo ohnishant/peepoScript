@@ -376,7 +376,11 @@ func (p *Parser) parseIndex() ast.Expression {
 		return nil
 	}
 	if !p.curTokenIs(token.RBRACKET) {
-		p.errors = append(p.errors, fmt.Sprintf("Sadge... expected Thinking2 after index, got %q", p.curToken.Literal))
+		if p.curTokenIs(token.EOF) {
+			p.errors = append(p.errors, "Sadge... missing Thinking2 before end of input")
+		} else {
+			p.errors = append(p.errors, fmt.Sprintf("Sadge... expected Thinking2 after index, got %q", p.curToken.Literal))
+		}
 		return nil
 	}
 	node.Closing = p.curToken

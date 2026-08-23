@@ -1,6 +1,7 @@
 package evaluator
 
 import (
+	"io"
 	"testing"
 
 	"github.com/ohnishat/peepoScript/cmd/parser"
@@ -8,7 +9,7 @@ import (
 
 func testEval(t *testing.T, input string) (*Environment, Object) {
 	t.Helper()
-	env := NewEnvironment()
+	env := NewEnvironmentWithOut(io.Discard)
 	program, errors := parser.Parse(input)
 	if len(errors) > 0 {
 		t.Fatalf("parser errors: %v", errors)
@@ -294,6 +295,22 @@ func TestLoopOverList(t *testing.T) {
 	_, evaluated := testEval(t, input)
 	if evaluated.Inspect() != "14" {
 		t.Errorf("expected sum of list elements 14, got %s", evaluated.Inspect())
+	}
+}
+
+func TestLoopBodyErrorsStopTheLoop(t *testing.T) {
+	input := `
+	peepoJuice PepoG i 0. peepoLessThan i 10. peepoCookie i peepoFriendship i 1. Wokege
+		peepoBye 1 0.
+	Bedge
+	`
+	_, evaluated := testEval(t, input)
+	err, ok := evaluated.(*Error)
+	if !ok {
+		t.Fatalf("expected body error to propagate, got %v", evaluated.Inspect())
+	}
+	if !contains(err.Message, "division by zero") {
+		t.Errorf("expected division by zero, got %q", err.Message)
 	}
 }
 

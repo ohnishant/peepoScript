@@ -134,7 +134,10 @@ func evalFor(node *ast.ForExpression, env *Environment) Object {
 			return NULL
 		}
 
-		Eval(node.Body, NewEnclosedEnvironment(loopEnv))
+		bodyResult := Eval(node.Body, NewEnclosedEnvironment(loopEnv))
+		if isError(bodyResult) {
+			return bodyResult
+		}
 
 		if node.Step != nil {
 			v := eval(node.Step, loopEnv)

@@ -208,3 +208,12 @@ func TestParserErrors(t *testing.T) {
 		}
 	}
 }
+
+func TestParseIndexContinuationError(t *testing.T) {
+	_, errors := Parse("PepoG xs Thinking1 1 Thinking2. xs Thinking1 0")
+	for _, err := range errors {
+		if err != "Sadge... missing Thinking2 before end of input" {
+			t.Errorf("expected missing-Thinking2 error, got %q", err)
+		}
+	}
+}
