@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ohnishat/peepoScript/cmd/ast"
+	"github.com/ohnishat/peepoScript/cmd/token"
 )
 
 var (
@@ -131,6 +132,17 @@ func evalPrefix(hunks []ast.Expression, env *Environment) Object {
 					return &Error{Message: fmt.Sprintf("peepoJuice needs a boolean, got %s", val.Type())}
 				}
 				return nativeBool(!b.Value)
+			}
+			if h.Token.Type == token.NEGATE {
+				val := next()
+				if isError(val) {
+					return val
+				}
+				i, ok := val.(*Integer)
+				if !ok {
+					return &Error{Message: fmt.Sprintf("Sadge... unary - needs an integer, got %s", val.Type())}
+				}
+				return &Integer{Value: -i.Value}
 			}
 			left := next()
 			if isError(left) {

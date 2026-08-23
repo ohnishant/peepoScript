@@ -88,9 +88,10 @@ func TestFunctions(t *testing.T) {
 
 func TestNegativeIntegerLiteral(t *testing.T) {
 	input := `
-	PepoG minusOne PepegaCredit1.
+	PepoG minusOne -1.
 	PepoG subtracted PepegaCredit 10 5.
-	PepoG give SadgeBusiness Wokege PepegaCredit1. Bedge
+	PepoG negatedSum - peepoFriendship 2 3.
+	PepoG give SadgeBusiness Wokege -1. Bedge
 	give.
 	`
 	env, evaluated := testEval(t, input)
@@ -101,6 +102,7 @@ func TestNegativeIntegerLiteral(t *testing.T) {
 	}{
 		{"minusOne", "-1"},
 		{"subtracted", "5"},
+		{"negatedSum", "-5"},
 	}
 
 	for _, tt := range tests {
