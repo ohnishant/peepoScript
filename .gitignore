@@ -14,6 +14,8 @@ peepoScript
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+# ...except golden output for the examples, which is tracked test data
+!examples/*.out
 
 # Dependency directories (remove the comment below to include it)
 # vendor/

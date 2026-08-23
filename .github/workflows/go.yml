@@ -90,6 +90,9 @@ jobs:
           - name: repl-tab-completion
             package: ./cmd/repl
             run: ^TestIntegration
+          - name: examples-golden-output
+            package: .
+            run: ^TestIntegrationExamples
     steps:
       - uses: actions/checkout@v4
 
