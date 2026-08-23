@@ -1,0 +1,18 @@
+PepoG fib SadgeBusiness n Wokege
+    Hmmge peepoLessThan n 2 Wokege
+        n.
+    Bedge peepoShrug Wokege
+        peepoFriendship fib PepegaCredit n 1 fib PepegaCredit n 2.
+    Bedge
+Bedge
+
+PepoG printFibs SadgeBusiness upto current Wokege
+    Hmmge peepoGreaterThan current upto Wokege
+        peepoChat "all done".
+    Bedge peepoShrug Wokege
+        peepoChat "fib" current "=" fib current.
+        printFibs upto peepoFriendship current 1.
+    Bedge
+Bedge
+
+printFibs 10 0.

@@ -63,6 +63,20 @@ Script mode does not echo the value of the last expression back the way the REPL
 
 Parse errors, runtime errors, and missing files exit with status 1 and print on stderr. A clean run exits 0.
 
+### Examples
+
+The `examples/` directory has runnable scripts, ordered simple to less simple. Each one runs as-is:
+
+```sh
+./peepo examples/arithmetic.peepo
+```
+
+- `arithmetic.peepo`: bindings, operator-first arithmetic, truncating division
+- `strings.peepo`: concatenation and `peepoMeasure`
+- `conditionals.peepo`: `Hmmge`/`peepoShrug`, including a nested branch
+- `countdown.peepo`: recursion in place of a loop
+- `fibonacci.peepo`: two functions, one computing and one driving the recursion
+
 ### What's next
 
 The plan is to compile the interpreter to WASM so scripts can run on a webpage (see issue #13 for details). That work builds on two choices already in place: script execution lives in `cmd/runner`, which has no terminal dependencies, and `peepoChat` writes to an injected writer instead of hardcoded stdout, so a browser build can route output into the page.
