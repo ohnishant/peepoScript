@@ -1,0 +1,5 @@
+PepoG name "peepo".
+peepoChat "hello" name.
+
+peepoChat peepoFriendship "hello, " peepoFriendship name "!".
+peepoChat peepoMeasure "hello, peepo!".

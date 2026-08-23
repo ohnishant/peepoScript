@@ -90,6 +90,9 @@ jobs:
           - name: repl-tab-completion
             package: ./cmd/repl
             run: ^TestIntegration
+          - name: examples-golden-output
+            package: .
+            run: ^TestIntegrationExamples
     steps:
       - uses: actions/checkout@v4
 
@@ -203,7 +206,7 @@ jobs:
               '```',
               '',
               '</details>',
-            ].join('\n');
+            ];
 
             if (newCount < oldCount) {
               lines.push(
@@ -212,6 +215,8 @@ jobs:
                 'until the owner reviews and approves the removal.**',
               );
             }
+
+            const body = lines.join('\n');
 
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
@@ -225,14 +230,14 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: existing.id,
-                body: lines.join('\n'),
+                body: body,
               });
             } else {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body: lines.join('\n'),
+                body: body,
               });
             }
 

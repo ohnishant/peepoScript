@@ -59,7 +59,7 @@ type Error struct {
 }
 
 func (e *Error) Type() ObjectType { return ERROR_OBJ }
-func (e *Error) Inspect() string  { return "PepegaAyyy! " + e.Message }
+func (e *Error) Inspect() string  { return "Pepega bro, what the fuck are you doing: " + e.Message }
 
 type Function struct {
 	Parameters []*ast.Identifier
