@@ -86,6 +86,38 @@ func TestFunctions(t *testing.T) {
 	}
 }
 
+func TestNegativeIntegerLiteral(t *testing.T) {
+	input := `
+	PepoG minusOne PepegaCredit1.
+	PepoG subtracted PepegaCredit 10 5.
+	PepoG give SadgeBusiness Wokege PepegaCredit1. Bedge
+	give.
+	`
+	env, evaluated := testEval(t, input)
+
+	tests := []struct {
+		name     string
+		expected string
+	}{
+		{"minusOne", "-1"},
+		{"subtracted", "5"},
+	}
+
+	for _, tt := range tests {
+		val, ok := env.Get(tt.name)
+		if !ok {
+			t.Fatalf("%s not bound", tt.name)
+		}
+		if val.Inspect() != tt.expected {
+			t.Errorf("expected %s == %s, got %s", tt.name, tt.expected, val.Inspect())
+		}
+	}
+
+	if evaluated.Inspect() != "-1" {
+		t.Errorf("expected give call to return -1, got %s", evaluated.Inspect())
+	}
+}
+
 func TestRecursion(t *testing.T) {
 	input := `
 	PepoG fact SadgeBusiness n Wokege

@@ -105,6 +105,59 @@ func TestNextTokenKeepsReturningEOFAfterUnterminatedString(t *testing.T) {
 	}
 }
 
+func TestNextTokenNegativeIntegerLiteral(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  []token.Token
+	}{
+		{
+			name:  "adjacent digits form a negative literal",
+			input: `PepegaCredit5.`,
+			want: []token.Token{
+				{Type: token.INT, Literal: "-5"},
+				{Type: token.FULLSTOP, Literal: "."},
+			},
+		},
+		{
+			name:  "space keeps it a subtraction",
+			input: `PepegaCredit 5.`,
+			want: []token.Token{
+				{Type: token.MINUS, Literal: "PepegaCredit"},
+				{Type: token.INT, Literal: "5"},
+				{Type: token.FULLSTOP, Literal: "."},
+			},
+		},
+		{
+			name:  "negative literal in an assignment",
+			input: `PepoG x PepegaCredit1.`,
+			want: []token.Token{
+				{Type: token.LET, Literal: "PepoG"},
+				{Type: token.IDENT, Literal: "x"},
+				{Type: token.INT, Literal: "-1"},
+				{Type: token.FULLSTOP, Literal: "."},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := New(tt.input)
+			for i, want := range tt.want {
+				tok := l.NextToken()
+
+				if tok.Type != want.Type {
+					t.Fatalf("tests[%d] - wrong token type. Expected %q got %q", i, want.Type, tok.Type)
+				}
+
+				if tok.Literal != want.Literal {
+					t.Fatalf("tests[%d] - wrong token literal. Expected %q got %q", i, want.Literal, tok.Literal)
+				}
+			}
+		})
+	}
+}
+
 func TestNextTokenComplex_1(t *testing.T) {
 	input := `
 	PepoG ten 10.
