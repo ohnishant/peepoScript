@@ -16,9 +16,32 @@ permissions:
   pull-requests: write
 
 jobs:
-  unit-tests:
-    name: Unit tests
+  # Enumerate every package that owns tests so a new module is picked up
+  # without editing this file. Each module becomes its own parallel job.
+  discover-modules:
     runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.set.outputs.modules }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: set
+        run: |
+          modules=$(git ls-files '*_test.go' \
+            | xargs -n1 dirname \
+            | sort -u \
+            | sed 's|^|./|' \
+            | jq -R . | jq -sc .)
+          echo "modules=$modules" >> "$GITHUB_OUTPUT"
+
+  unit-tests:
+    name: unit / ${{ matrix.module }}
+    needs: discover-modules
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJSON(needs.discover-modules.outputs.modules) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -26,26 +49,22 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Build
-        run: go build -v ./...
-
-      - name: Vet
-        run: go vet ./...
-
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum@v1.13.0
 
       - name: Run unit tests
         # Integration tests are excluded here by their TestIntegration*
-        # prefix so each job owns one category. When no integration
-        # tests are merged yet, -skip matches nothing and this is a no-op.
-        run: gotestsum --format standard-verbose --junitfile unit-results.xml -- -skip '^TestIntegration' ./...
+        # prefix; they belong to the integration jobs below.
+        run: >
+          gotestsum --format standard-verbose
+          --junitfile unit-results.xml
+          -- -skip '^TestIntegration' ${{ matrix.module }}
 
       - name: Report test results
         uses: dorny/test-reporter@v1
         if: success() || failure()
         with:
-          name: Unit tests
+          name: unit / ${{ matrix.module }}
           path: unit-results.xml
           reporter: java-junit
           fail-on-error: false
@@ -54,13 +73,23 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: unit-test-output
+          name: unit-results-${{ strategy.job-index }}
           path: unit-results.xml
           retention-days: 7
 
+  # One entry per integration suite. Each runs as its own parallel job
+  # with its own check on the PR. Add a suite by appending an entry;
+  # the run pattern selects its tests by name prefix.
   integration-tests:
-    name: Integration tests
+    name: integration / ${{ matrix.suite.name }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - name: repl-tab-completion
+            package: ./cmd/repl
+            run: ^TestIntegration
     steps:
       - uses: actions/checkout@v4
 
@@ -72,16 +101,16 @@ jobs:
         run: go install gotest.tools/gotestsum@v1.13.0
 
       - name: Run integration tests
-        # Targets the pty-based REPL tests (TestIntegration* prefix).
-        # They self-skip on platforms without /dev/ptmx; Ubuntu runners
-        # satisfy the requirement.
-        run: gotestsum --format standard-verbose --junitfile integration-results.xml -- -run '^TestIntegration' ./...
+        run: >
+          gotestsum --format standard-verbose
+          --junitfile integration-results.xml
+          -- -run '${{ matrix.suite.run }}' ${{ matrix.suite.package }}
 
       - name: Report test results
         uses: dorny/test-reporter@v1
         if: success() || failure()
         with:
-          name: Integration tests
+          name: integration / ${{ matrix.suite.name }}
           path: integration-results.xml
           reporter: java-junit
           fail-on-error: false
@@ -90,9 +119,28 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: integration-test-output
+          name: integration-results-${{ strategy.job-index }}
           path: integration-results.xml
           retention-days: 7
+
+  # Single required status for branch protection instead of one check
+  # per matrix job.
+  ci-ok:
+    name: ci ok
+    needs: [unit-tests, integration-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check job results
+        run: |
+          results="${{ join(needs.*.result, ' ') }}"
+          echo "results: $results"
+          if [[ "$results" != *"failure"* && "$results" != *"cancelled"* ]]; then
+            echo "all test jobs passed"
+          else
+            echo "::error::one or more test jobs failed"
+            exit 1
+          fi
 
   test-guard:
     name: Test guard
