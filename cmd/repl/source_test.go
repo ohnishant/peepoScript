@@ -31,7 +31,7 @@ func TestStaticSourceSuggestsByPrefix(t *testing.T) {
 
 func TestTokenSourceBackedByKeywords(t *testing.T) {
 	got := newTokenSource().Suggestions("peepoC")
-	want := []string{"peepoCookie"}
+	want := []string{"peepoChat", "peepoCookie"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v, want %v", got, want)
 	}

@@ -8,6 +8,7 @@
 package main
 
 import (
+	"sort"
 	"strings"
 	"syscall/js"
 
@@ -41,8 +42,11 @@ func main() {
 	defer run.Release()
 	js.Global().Set("peepoRun", run)
 
+	// Language symbols: keywords plus builtins. The page uses this one
+	// list for both tab completion and emote lookup.
 	keywords := js.FuncOf(func(this js.Value, args []js.Value) any {
-		words := token.Keywords()
+		words := append(token.Keywords(), evaluator.Builtins()...)
+		sort.Strings(words)
 		arr := make([]any, len(words))
 		for i, w := range words {
 			arr[i] = w

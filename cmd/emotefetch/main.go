@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ohnishat/peepoScript/cmd/evaluator"
 	"github.com/ohnishat/peepoScript/cmd/token"
 )
 
@@ -87,7 +88,8 @@ func run(out string) error {
 
 	manifest := map[string]string{}
 	var missing []string
-	for _, name := range token.Keywords() {
+	symbols := append(token.Keywords(), evaluator.Builtins()...)
+	for _, name := range symbols {
 		emote, ok := resolve(name, channel)
 		if !ok {
 			missing = append(missing, name)
@@ -116,7 +118,7 @@ func run(out string) error {
 		return err
 	}
 
-	log.Printf("vendored %d/%d symbols into %s", len(manifest), len(token.Keywords()), out)
+	log.Printf("vendored %d/%d symbols into %s", len(manifest), len(symbols), out)
 	if len(missing) > 0 {
 		log.Printf("no emote found for: %v", missing)
 	}
