@@ -1,7 +1,4 @@
-# This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
-
-name: Go
+name: Tests
 
 on:
   push:
@@ -9,20 +6,241 @@ on:
   pull_request:
     branches: [ "main" ]
 
-jobs:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
-  build:
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  # Enumerate every package that owns tests so a new module is picked up
+  # without editing this file. Each module becomes its own parallel job.
+  discover-modules:
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.set.outputs.modules }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: set
+        run: |
+          modules=$(git ls-files '*_test.go' \
+            | xargs -n1 dirname \
+            | sort -u \
+            | sed 's|^|./|' \
+            | jq -R . | jq -sc .)
+          echo "modules=$modules" >> "$GITHUB_OUTPUT"
+
+  unit-tests:
+    name: unit / ${{ matrix.module }}
+    needs: discover-modules
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJSON(needs.discover-modules.outputs.modules) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@v1.13.0
+
+      - name: Run unit tests
+        # Integration tests are excluded here by their TestIntegration*
+        # prefix; they belong to the integration jobs below.
+        run: >
+          gotestsum --format standard-verbose
+          --junitfile unit-results.xml
+          -- -skip '^TestIntegration' ${{ matrix.module }}
+
+      - name: Report test results
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: unit / ${{ matrix.module }}
+          path: unit-results.xml
+          reporter: java-junit
+          fail-on-error: false
+
+      - name: Upload test output
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-results-${{ strategy.job-index }}
+          path: unit-results.xml
+          retention-days: 7
+
+  # One entry per integration suite. Each runs as its own parallel job
+  # with its own check on the PR. Add a suite by appending an entry;
+  # the run pattern selects its tests by name prefix.
+  integration-tests:
+    name: integration / ${{ matrix.suite.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - name: repl-tab-completion
+            package: ./cmd/repl
+            run: ^TestIntegration
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@v1.13.0
+
+      - name: Run integration tests
+        run: >
+          gotestsum --format standard-verbose
+          --junitfile integration-results.xml
+          -- -run '${{ matrix.suite.run }}' ${{ matrix.suite.package }}
+
+      - name: Report test results
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: integration / ${{ matrix.suite.name }}
+          path: integration-results.xml
+          reporter: java-junit
+          fail-on-error: false
+
+      - name: Upload test output
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-results-${{ strategy.job-index }}
+          path: integration-results.xml
+          retention-days: 7
+
+  # Single required status for branch protection instead of one check
+  # per matrix job.
+  ci-ok:
+    name: ci ok
+    needs: [unit-tests, integration-tests]
+    if: always()
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+      - name: Check job results
+        run: |
+          results="${{ join(needs.*.result, ' ') }}"
+          echo "results: $results"
+          if [[ "$results" != *"failure"* && "$results" != *"cancelled"* ]]; then
+            echo "all test jobs passed"
+          else
+            echo "::error::one or more test jobs failed"
+            exit 1
+          fi
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.22'
+  test-guard:
+    name: Test guard
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Build
-      run: go build -v ./...
+      - name: Diff test files against base
+        id: diff
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          BASE=$(git merge-base "origin/$BASE_REF" HEAD)
 
-    - name: Test
-      run: go test -v ./...
+          git diff --name-status "$BASE"..HEAD -- '*_test.go' > test-changes.txt || true
+
+          old_count=$(git grep -h '^func Test' "$BASE" -- '*_test.go' | wc -l)
+          new_count=$(git grep -h '^func Test' HEAD -- '*_test.go' | wc -l)
+
+          {
+            echo "base=$BASE"
+            echo "old_count=$old_count"
+            echo "new_count=$new_count"
+            echo "has_changes=$(test -s test-changes.txt && echo true || echo false)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post test-change notice
+        if: steps.diff.outputs.has_changes == 'true'
+        uses: actions/github-script@v7
+        env:
+          OLD_COUNT: ${{ steps.diff.outputs.old_count }}
+          NEW_COUNT: ${{ steps.diff.outputs.new_count }}
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- peepo-test-guard -->';
+            const changes = fs.readFileSync('test-changes.txt', 'utf8').trim();
+            const oldCount = parseInt(process.env.OLD_COUNT);
+            const newCount = parseInt(process.env.NEW_COUNT);
+
+            const lines = [
+              marker,
+              '### :warning: Test files changed',
+              '',
+              'This PR touches test code. Agents must not delete tests or remove',
+              'test cases without explicit owner approval.',
+              '',
+              '| | before | after |',
+              '| --- | --- | --- |',
+              `| Test functions | ${oldCount} | ${newCount} |`,
+              '',
+              '<details><summary>Changed test files</summary>',
+              '',
+              '```',
+              changes,
+              '```',
+              '',
+              '</details>',
+            ].join('\n');
+
+            if (newCount < oldCount) {
+              lines.push(
+                '',
+                `**:x: Net loss of ${oldCount - newCount} test function(s). This check fails`,
+                'until the owner reviews and approves the removal.**',
+              );
+            }
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.startsWith(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: lines.join('\n'),
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: lines.join('\n'),
+              });
+            }
+
+      - name: Fail on removed tests
+        if: steps.diff.outputs.new_count < steps.diff.outputs.old_count
+        run: |
+          echo "::error::Test functions were removed ($OLD_COUNT -> $NEW_COUNT). Owner approval required."
+          exit 1
+        env:
+          OLD_COUNT: ${{ steps.diff.outputs.old_count }}
+          NEW_COUNT: ${{ steps.diff.outputs.new_count }}
