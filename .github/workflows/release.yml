@@ -18,7 +18,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.22'
+        go-version-file: go.mod
 
     - name: Compute next version
       id: version
@@ -63,6 +63,17 @@ jobs:
           GOOS=$os GOARCH=$arch CGO_ENABLED=0 go build -trimpath \
             -ldflags "-s -w" -o dist/$name .
         done
+
+    # Browser bundle: the wasm module plus the wasm_exec.js glue from
+    # the Go toolchain that hosts need to load it.
+    - name: Build wasm bundle
+      run: |
+        mkdir -p dist/wasm
+        GOOS=js GOARCH=wasm go build -trimpath -ldflags "-s -w" \
+          -o dist/wasm/peepo.wasm ./cmd/wasm
+        cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" dist/wasm/
+        zip -j dist/peepo-wasm.zip dist/wasm/*
+        rm -rf dist/wasm
 
     - name: Create release
       env:

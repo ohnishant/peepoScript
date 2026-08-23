@@ -25,7 +25,18 @@ let worker = spawnWorker();
 function spawnWorker() {
   const w = new Worker("worker.js");
   w.onmessage = onWorkerMessage;
-  w.onerror = (e) => appendOutput(`worker crashed: ${e.message}`, "err");
+  w.onerror = (e) => {
+    // A panic inside the wasm module kills this worker for good; any
+    // pending run would hang forever otherwise.
+    appendOutput(`worker crashed: ${e.message}`, "err");
+    if (!pendingRun) return;
+    clearTimeout(pendingRun.timer);
+    pendingRun = null;
+    worker.terminate();
+    worker = spawnWorker();
+    runBtn.disabled = false;
+    appendOutput("interpreter restarted; saved bindings are gone.", "err");
+  };
   w.postMessage({ type: "keywords" });
   return w;
 }
@@ -415,12 +426,6 @@ acEl.addEventListener("mousedown", (e) => {
 });
 
 editor.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && e.ctrlKey) {
-    e.preventDefault();
-    runCode();
-    return;
-  }
-
   if (acOpen()) {
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
@@ -459,11 +464,12 @@ document.addEventListener("keydown", (e) => {
 // ---------------------------------------------------------------- run
 
 function runCode() {
-  if (runBtn.disabled) return;
+  if (runBtn.disabled || pendingRun) return;
   const code = editorSource(editor);
   if (!code.trim()) return;
 
   output.textContent = "";
+  runBtn.disabled = true;
   runId += 1;
   const id = runId;
   const timer = setTimeout(() => {
