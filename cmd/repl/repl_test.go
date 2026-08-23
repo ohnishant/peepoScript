@@ -3,13 +3,11 @@ package repl
 import (
 	"reflect"
 	"testing"
-
-	"github.com/ohnishat/peepoScript/cmd/complete"
 )
 
 func TestRuneCompleterCompletesLastWord(t *testing.T) {
-	c := &runeCompleter{sources: []complete.Source{
-		complete.StaticSource{Words: []string{"peepoCookie", "peepoJuice"}},
+	c := &runeCompleter{sources: []Source{
+		staticSource{words: []string{"peepoCookie", "peepoJuice"}},
 	}}
 
 	tests := []struct {
@@ -32,8 +30,8 @@ func TestRuneCompleterCompletesLastWord(t *testing.T) {
 }
 
 func TestRuneCompleterNoMatches(t *testing.T) {
-	c := &runeCompleter{sources: []complete.Source{
-		complete.StaticSource{Words: []string{"peepoCookie"}},
+	c := &runeCompleter{sources: []Source{
+		staticSource{words: []string{"peepoCookie"}},
 	}}
 
 	if items, _ := c.Do([]rune("zzz"), 3); items != nil {

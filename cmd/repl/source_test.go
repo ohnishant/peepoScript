@@ -1,4 +1,4 @@
-package complete
+package repl
 
 import (
 	"reflect"
@@ -6,7 +6,7 @@ import (
 )
 
 func TestStaticSourceSuggestsByPrefix(t *testing.T) {
-	src := StaticSource{Words: []string{"peepoCookie", "peepoJuice", "PepoG", "Hmmge"}}
+	src := staticSource{words: []string{"peepoCookie", "peepoJuice", "PepoG", "Hmmge"}}
 
 	tests := []struct {
 		prefix string
@@ -28,13 +28,13 @@ func TestStaticSourceSuggestsByPrefix(t *testing.T) {
 }
 
 func TestTokenSourceBackedByKeywords(t *testing.T) {
-	got := NewTokenSource().Suggestions("peepoC")
+	got := newTokenSource().Suggestions("peepoC")
 	want := []string{"peepoCookie"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v, want %v", got, want)
 	}
 
-	if len(NewTokenSource().Suggestions("")) != 0 {
+	if len(newTokenSource().Suggestions("")) != 0 {
 		t.Error("empty prefix should suggest nothing")
 	}
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/chzyer/readline"
 	"golang.org/x/term"
 
-	"github.com/ohnishat/peepoScript/cmd/complete"
 	"github.com/ohnishat/peepoScript/cmd/evaluator"
 	"github.com/ohnishat/peepoScript/cmd/parser"
 )
@@ -60,7 +59,7 @@ func (s *session) evalLine(line string) []string {
 
 // runeCompleter adapts completion sources to readline's tab handler.
 type runeCompleter struct {
-	sources []complete.Source
+	sources []Source
 }
 
 func (c *runeCompleter) Do(line []rune, pos int) ([][]rune, int) {
@@ -89,13 +88,13 @@ func (c *runeCompleter) Do(line []rune, pos int) ([][]rune, int) {
 	return items, start
 }
 
-func defaultSources() []complete.Source {
-	return []complete.Source{complete.NewTokenSource()}
+func defaultSources() []Source {
+	return []Source{newTokenSource()}
 }
 
 // interactive runs the REPL through readline so Tab completes against
 // the configured sources.
-func interactive(sources []complete.Source) error {
+func interactive(sources []Source) error {
 	rl, err := readline.NewEx(&readline.Config{
 		Prompt:          PROMPT,
 		InterruptPrompt: "^C",
