@@ -39,6 +39,24 @@ func TestNextToken_1(t *testing.T) {
 	}
 }
 
+func runTokenTest(t *testing.T, name, input string, want []token.Token) {
+	t.Helper()
+	t.Run(name, func(t *testing.T) {
+		l := New(input)
+		for i, want := range want {
+			tok := l.NextToken()
+
+			if tok.Type != want.Type {
+				t.Fatalf("tests[%d] - wrong token type. Expected %q got %q", i, want.Type, tok.Type)
+			}
+
+			if tok.Literal != want.Literal {
+				t.Fatalf("tests[%d] - wrong token literal. Expected %q got %q", i, want.Literal, tok.Literal)
+			}
+		}
+	})
+}
+
 func TestNextTokenUnterminatedString(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -74,20 +92,7 @@ func TestNextTokenUnterminatedString(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			l := New(tt.input)
-			for i, want := range tt.want {
-				tok := l.NextToken()
-
-				if tok.Type != want.Type {
-					t.Fatalf("tests[%d] - wrong token type. Expected %q got %q", i, want.Type, tok.Type)
-				}
-
-				if tok.Literal != want.Literal {
-					t.Fatalf("tests[%d] - wrong token literal. Expected %q got %q", i, want.Literal, tok.Literal)
-				}
-			}
-		})
+		runTokenTest(t, tt.name, tt.input, tt.want)
 	}
 }
 
@@ -141,20 +146,7 @@ func TestNextTokenNegativeIntegerLiteral(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			l := New(tt.input)
-			for i, want := range tt.want {
-				tok := l.NextToken()
-
-				if tok.Type != want.Type {
-					t.Fatalf("tests[%d] - wrong token type. Expected %q got %q", i, want.Type, tok.Type)
-				}
-
-				if tok.Literal != want.Literal {
-					t.Fatalf("tests[%d] - wrong token literal. Expected %q got %q", i, want.Literal, tok.Literal)
-				}
-			}
-		})
+		runTokenTest(t, tt.name, tt.input, tt.want)
 	}
 }
 
