@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/chzyer/readline"
-	"golang.org/x/term"
 
 	"github.com/ohnishat/peepoScript/cmd/evaluator"
 	"github.com/ohnishat/peepoScript/cmd/parser"
@@ -122,8 +121,23 @@ func interactive(sources []Source) error {
 	}
 }
 
+// isTerminal reports whether in is an interactive terminal, using the
+// char-device bit from the stdlib. Good enough here; x/term would only
+// buy us stricter ioctl checks we don't need.
+func isTerminal(in io.Reader) bool {
+	f, ok := in.(*os.File)
+	if !ok {
+		return false
+	}
+	info, err := f.Stat()
+	if err != nil {
+		return false
+	}
+	return info.Mode()&os.ModeCharDevice != 0
+}
+
 func StartRepl(in io.Reader, out io.Writer) {
-	if f, ok := in.(*os.File); ok && term.IsTerminal(int(f.Fd())) {
+	if isTerminal(in) {
 		if err := interactive(defaultSources()); err == nil {
 			return
 		}
