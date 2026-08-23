@@ -17,6 +17,7 @@ func TestRuneCompleterCompletesLastWord(t *testing.T) {
 		wantPos int
 	}{
 		{"peepoC", 6, [][]rune{[]rune("ookie")}, 0},
+		{"PEEPOC", 6, [][]rune{[]rune("ookie")}, 0},
 		{"peepoCookie peepoJ", 18, [][]rune{[]rune("uice")}, 12},
 	}
 

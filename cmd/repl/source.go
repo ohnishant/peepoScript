@@ -14,7 +14,9 @@ type Source interface {
 	Suggestions(prefix string) []string
 }
 
-// staticSource suggests from a fixed word list, ignoring empty prefixes.
+// staticSource suggests from a fixed word list, matching prefixes
+// case-insensitively. Matches keep the word's original casing so the
+// inserted completion is always spelled correctly.
 type staticSource struct {
 	words []string
 }
@@ -25,7 +27,7 @@ func (s staticSource) Suggestions(prefix string) []string {
 	}
 	var matches []string
 	for _, word := range s.words {
-		if strings.HasPrefix(word, prefix) {
+		if len(word) >= len(prefix) && strings.EqualFold(word[:len(prefix)], prefix) {
 			matches = append(matches, word)
 		}
 	}
