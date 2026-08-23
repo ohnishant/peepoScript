@@ -1,3 +1,14 @@
+/* Hack is vendored in fonts/ (MIT, see LICENSE.md there) so the
+   editor renders identically offline. Regular weight only: nothing
+   in the stylesheet requests bold monospace. */
+@font-face {
+  font-family: "Hack";
+  src: url("fonts/hack-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --bg: #0e0e10;
   --panel: #18181b;
@@ -8,6 +19,7 @@
   --accent-dim: #6441a5;
   --error: #ff6b6b;
   --ok: #57d98d;
+  --string: #e6b455;
 }
 
 * { box-sizing: border-box; }
@@ -43,13 +55,24 @@ main {
   flex: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
+  /* Cap the row at main's height so long source scrolls inside the
+     editor (keeping the gutter pinned) instead of stretching the page. */
+  grid-template-rows: minmax(0, 1fr);
   gap: 1rem;
   padding: 1rem 1.25rem;
   min-height: 0;
 }
 
 @media (max-width: 900px) {
-  main { grid-template-columns: 1fr; }
+  main { grid-template-columns: 1fr; grid-template-rows: none; }
+}
+
+@media (min-width: 901px) {
+  /* min-height alone leaves body height content-driven, so a long
+     source stretches the page instead of scrolling inside the editor
+     (which would drag the gutter off screen). A definite height lets
+     flex/grid bound the panes. */
+  body { height: 100vh; }
 }
 
 .pane {
@@ -91,13 +114,38 @@ main {
   cursor: pointer;
 }
 
+.editor-wrap {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Numbers must share the editor's font metrics and top padding or the
+   rows drift apart. */
+#gutter {
+  overflow: hidden;
+  padding: 0.9rem 0.6ch 0.9rem 0.9rem;
+  text-align: right;
+  color: var(--muted);
+  background: #141416;
+  border-right: 1px solid var(--panel-edge);
+  user-select: none;
+  cursor: default;
+  font-family: "Hack", ui-monospace, "Cascadia Code", "JetBrains Mono", monospace;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
 #editor {
   flex: 1;
   padding: 0.9rem;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  overflow: auto;
+  /* pre, not pre-wrap: a wrapped line would occupy several rows and
+     desynchronize the gutter numbers. */
+  white-space: pre;
+  font-family: "Hack", ui-monospace, "Cascadia Code", "JetBrains Mono", monospace;
   font-size: 0.95rem;
   line-height: 1.55;
   outline: none;
@@ -106,6 +154,9 @@ main {
 }
 
 #editor:focus { background: #1c1c21; }
+
+#editor .str { color: var(--string); }
+#editor .com { color: var(--muted); }
 
 #editor img.emote,
 #output img.emote {
@@ -133,7 +184,7 @@ main {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.35rem 0.75rem;
-  font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  font-family: "Hack", ui-monospace, "Cascadia Code", "JetBrains Mono", monospace;
   font-size: 0.9rem;
   cursor: pointer;
 }
@@ -177,7 +228,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   flex: 1;
   padding: 0.9rem;
   overflow-y: auto;
-  font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  font-family: "Hack", ui-monospace, "Cascadia Code", "JetBrains Mono", monospace;
   font-size: 0.95rem;
   line-height: 1.55;
   white-space: pre-wrap;

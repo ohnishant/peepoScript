@@ -6,6 +6,7 @@ const TOWDAN_TWITCH_ID = "76020462"; // towdan's channel owns the preferred emot
 const AC_MAX_ITEMS = 8;
 
 const editor = document.getElementById("editor");
+const gutter = document.getElementById("gutter");
 const output = document.getElementById("output");
 const runBtn = document.getElementById("run-btn");
 const clearBtn = document.getElementById("clear-btn");
@@ -265,21 +266,59 @@ function setCaretOffset(offset) {
 }
 
 // Rebuilds the DOM from source text, swapping exact emote-name words
-// for their images. Identifiers split on everything non-word-like, so
+// for their images and wrapping strings/comments in colored spans.
+// Identifiers split on everything non-word-like, so
 // `peepoChat "Wokege".` renders inside the string quotes too.
 function buildEditorFragment(src) {
   const frag = document.createDocumentFragment();
-  for (const part of src.split(/([A-Za-z0-9_]+)/)) {
+  // Regions mirror the lexer's scan order. A quote opens a string
+  // (quote to next quote, no escapes, newlines allowed; unterminated
+  // runs to EOF, which is exactly what readString will swallow as
+  // ILLEGAL) unless a comment opened first: skipComment eats # to end
+  // of line before readString can see any quote inside it. Whichever
+  // region starts earlier wins the split, so a # inside a string stays
+  // literal and a quote inside a comment stays inert.
+  for (const part of src.split(/("[^"]*(?:"|$)|#[^\n]*)/)) {
     if (!part) continue;
-    if (emotes.has(part)) frag.append(makeEmoteImg(part));
-    else frag.append(part);
+    if (part.startsWith('"') || part.startsWith("#")) {
+      const span = document.createElement("span");
+      span.className = part.startsWith('"') ? "str" : "com";
+      appendEmoteParts(span, part);
+      frag.append(span);
+    } else {
+      appendEmoteParts(frag, part);
+    }
   }
   return frag;
+}
+
+function appendEmoteParts(root, text) {
+  for (const part of text.split(/([A-Za-z0-9_]+)/)) {
+    if (!part) continue;
+    if (emotes.has(part)) root.append(makeEmoteImg(part));
+    else root.append(part);
+  }
 }
 
 function setEditorSource(src, caretOffset) {
   editor.replaceChildren(buildEditorFragment(src));
   setCaretOffset(caretOffset ?? src.length);
+  renderGutter(src);
+  resetUndoHistory();
+}
+
+// Line numbers are derived from the source, not the DOM, so wrapped or
+// partial nodes can never skew them.
+function renderGutter(src) {
+  const lines = Math.max(1, src.split("\n").length);
+  if (gutter.childElementCount === lines) return;
+  const frag = document.createDocumentFragment();
+  for (let i = 1; i <= lines; i++) {
+    const row = document.createElement("div");
+    row.textContent = i;
+    frag.append(row);
+  }
+  gutter.replaceChildren(frag);
 }
 
 function normalize() {
@@ -287,11 +326,121 @@ function normalize() {
   const src = editorSource(editor);
   editor.replaceChildren(buildEditorFragment(src));
   if (off !== null) setCaretOffset(off);
+  renderGutter(src);
+  scheduleUndoCommit();
 }
 
 editor.addEventListener("input", () => {
   normalize();
   updateAutocomplete();
+});
+
+// ---------------------------------------------------------------- undo
+//
+// Rebuilding the DOM on every keystroke throws away the browser's
+// native undo history, so the editor keeps its own. A commit lands
+// UNDO_DEBOUNCE_MS after the last mutation and stores the *previous*
+// known state, so one undo step rewinds a whole typed burst, not just
+// the final character. Programmatic replaces (autocomplete accept,
+// example load) go through setEditorSource and restart the stack.
+
+const UNDO_DEBOUNCE_MS = 400;
+const UNDO_MAX_DEPTH = 200;
+
+let undoStack = [];
+let redoStack = [];
+let committed = null; // {source, caretOffset}: newest state outside the stacks
+let undoTimer = null;
+
+function currentState() {
+  return {
+    source: editorSource(editor),
+    caretOffset: getCaretOffset(),
+  };
+}
+
+// Moves `committed` forward to what is in the editor right now,
+// pushing the stale value onto the undo stack when the text changed.
+function commitUndoPoint() {
+  const cur = currentState();
+  if (!committed) {
+    // No baseline yet; startup order guarantees one exists today,
+    // but a reorder shouldn't turn into a TypeError here.
+    committed = cur;
+    return;
+  }
+  if (cur.source !== committed.source) {
+    undoStack.push(committed);
+    if (undoStack.length > UNDO_MAX_DEPTH) undoStack.shift();
+    redoStack = [];
+  }
+  committed = cur;
+}
+
+function scheduleUndoCommit() {
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(() => {
+    undoTimer = null;
+    commitUndoPoint();
+  }, UNDO_DEBOUNCE_MS);
+}
+
+// Ctrl+z must never race a pending commit, or the burst it belongs to
+// would be skipped entirely.
+function flushUndoCommit() {
+  if (!undoTimer) return;
+  clearTimeout(undoTimer);
+  undoTimer = null;
+  commitUndoPoint();
+}
+
+function resetUndoHistory() {
+  clearTimeout(undoTimer);
+  undoTimer = null;
+  undoStack = [];
+  redoStack = [];
+  committed = currentState();
+}
+
+function applySnapshot(snap) {
+  editor.replaceChildren(buildEditorFragment(snap.source));
+  setCaretOffset(snap.caretOffset ?? snap.source.length);
+  renderGutter(snap.source);
+  // Content may no longer support the old scroll position; not every
+  // engine fires a scroll event for its own clamp.
+  gutter.scrollTop = editor.scrollTop;
+  committed = snap;
+  hideAutocomplete(); // the word before the caret may no longer exist
+}
+
+function undoEdit() {
+  flushUndoCommit();
+  const prev = undoStack.pop();
+  if (!prev) return;
+  redoStack.push(currentState());
+  applySnapshot(prev);
+}
+
+function redoEdit() {
+  flushUndoCommit();
+  const next = redoStack.pop();
+  if (!next) return;
+  undoStack.push(currentState());
+  applySnapshot(next);
+}
+
+// Native undo is dead here (normalize() rewrites the DOM it would
+// target), so these combos are always swallowed, history or not.
+editor.addEventListener("keydown", (e) => {
+  if (!(e.ctrlKey || e.metaKey)) return;
+  const key = e.key.toLowerCase();
+  if (key === "z" && !e.shiftKey) {
+    e.preventDefault();
+    undoEdit();
+  } else if ((key === "z" && e.shiftKey) || key === "y") {
+    e.preventDefault();
+    redoEdit();
+  }
 });
 
 // Paste as plain text at the caret; the input event then normalizes.
@@ -302,6 +451,34 @@ editor.addEventListener("paste", (e) => {
 });
 
 editor.addEventListener("blur", () => hideAutocompleteSoon());
+
+// The editor is the only scroller; the gutter mirrors it vertically and
+// never moves horizontally (wide lines scroll under fixed numbers, like
+// a real editor).
+editor.addEventListener("scroll", () => {
+  gutter.scrollTop = editor.scrollTop;
+});
+
+// Clicking a number puts the caret at the start of that line.
+gutter.addEventListener("mousedown", (e) => {
+  e.preventDefault();
+  const row = e.target.closest("div");
+  // Clicks landing on the container itself (empty space past the last
+  // number) must not teleport the caret to line 1.
+  if (!row || row === gutter) return;
+  const line = [...gutter.children].indexOf(row);
+  const src = editorSource(editor);
+  let off = 0;
+  for (let i = 0; i < line; i++) {
+    const next = src.indexOf("\n", off);
+    if (next === -1) break;
+    off = next + 1;
+  }
+  // Focus first: an empty editor has no boundary for setCaretOffset,
+  // which would otherwise return early and leave focus on the gutter.
+  editor.focus();
+  setCaretOffset(Math.min(off, src.length));
+});
 
 // -------------------------------------------------------- autocomplete
 
