@@ -21,6 +21,7 @@ const (
 	ASSIGN   = "ASSIGN"
 	PLUS     = "ADD"
 	MINUS    = "SUBTRACT"
+	NEGATE   = "NEGATE"
 	MULTIPLY = "MULTIPLY"
 	DIVIDE   = "DIVIDE"
 

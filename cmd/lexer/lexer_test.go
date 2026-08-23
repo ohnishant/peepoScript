@@ -39,6 +39,24 @@ func TestNextToken_1(t *testing.T) {
 	}
 }
 
+func runTokenTest(t *testing.T, name, input string, want []token.Token) {
+	t.Helper()
+	t.Run(name, func(t *testing.T) {
+		l := New(input)
+		for i, want := range want {
+			tok := l.NextToken()
+
+			if tok.Type != want.Type {
+				t.Fatalf("tests[%d] - wrong token type. Expected %q got %q", i, want.Type, tok.Type)
+			}
+
+			if tok.Literal != want.Literal {
+				t.Fatalf("tests[%d] - wrong token literal. Expected %q got %q", i, want.Literal, tok.Literal)
+			}
+		}
+	})
+}
+
 func TestNextTokenUnterminatedString(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -74,20 +92,7 @@ func TestNextTokenUnterminatedString(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			l := New(tt.input)
-			for i, want := range tt.want {
-				tok := l.NextToken()
-
-				if tok.Type != want.Type {
-					t.Fatalf("tests[%d] - wrong token type. Expected %q got %q", i, want.Type, tok.Type)
-				}
-
-				if tok.Literal != want.Literal {
-					t.Fatalf("tests[%d] - wrong token literal. Expected %q got %q", i, want.Literal, tok.Literal)
-				}
-			}
-		})
+		runTokenTest(t, tt.name, tt.input, tt.want)
 	}
 }
 
@@ -102,6 +107,48 @@ func TestNextTokenKeepsReturningEOFAfterUnterminatedString(t *testing.T) {
 		if tok.Type != token.EOF {
 			t.Fatalf("call %d - expected EOF got %q (%q)", i, tok.Type, tok.Literal)
 		}
+	}
+}
+
+func TestNextTokenNegativeIntegerLiteral(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  []token.Token
+	}{
+		{
+			name:  "negative literal in an assignment",
+			input: `PepoG x -5.`,
+			want: []token.Token{
+				{Type: token.LET, Literal: "PepoG"},
+				{Type: token.IDENT, Literal: "x"},
+				{Type: token.NEGATE, Literal: "-"},
+				{Type: token.INT, Literal: "5"},
+				{Type: token.FULLSTOP, Literal: "."},
+			},
+		},
+		{
+			name:  "unary minus before an identifier",
+			input: `-x.`,
+			want: []token.Token{
+				{Type: token.NEGATE, Literal: "-"},
+				{Type: token.IDENT, Literal: "x"},
+				{Type: token.FULLSTOP, Literal: "."},
+			},
+		},
+		{
+			name:  "PepegaCredit stays binary, adjacent digits or not",
+			input: `PepegaCredit5.`,
+			want: []token.Token{
+				{Type: token.MINUS, Literal: "PepegaCredit"},
+				{Type: token.INT, Literal: "5"},
+				{Type: token.FULLSTOP, Literal: "."},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		runTokenTest(t, tt.name, tt.input, tt.want)
 	}
 }
 

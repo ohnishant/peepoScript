@@ -238,7 +238,7 @@ func (p *Parser) acceptFullstop() {
 func isExprStart(t token.TokenType) bool {
 	switch t {
 	case token.INT, token.STRING, token.TRUE, token.FALSE,
-		token.IDENT, token.NOT,
+		token.IDENT, token.NOT, token.NEGATE,
 		token.PLUS, token.MINUS, token.MULTIPLY, token.DIVIDE,
 		token.EQUAL, token.LESSTHAN, token.GREATERTHAN:
 		return true
@@ -288,6 +288,11 @@ func (p *Parser) parseExpression() ast.Expression {
 
 		case token.NOT:
 			prefix.Hunks = append(prefix.Hunks, &ast.OperatorNode{Token: p.curToken, Operator: "!"})
+
+		case token.NEGATE:
+			// Unary minus, written as -. Distinct from MINUS (PepegaCredit),
+			// which is subtraction and always binary.
+			prefix.Hunks = append(prefix.Hunks, &ast.OperatorNode{Token: p.curToken, Operator: "-"})
 
 		case token.PLUS, token.MINUS, token.MULTIPLY, token.DIVIDE,
 			token.EQUAL, token.LESSTHAN, token.GREATERTHAN:

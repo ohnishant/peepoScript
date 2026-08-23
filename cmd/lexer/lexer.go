@@ -41,6 +41,8 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newToken(token.COMMA, l.ch)
 	case '.':
 		tok = newToken(token.FULLSTOP, l.ch)
+	case '-':
+		tok = newToken(token.NEGATE, l.ch)
 	case '"':
 		literal, closed := l.readString()
 		if closed {
