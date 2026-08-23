@@ -324,6 +324,12 @@ function currentState() {
 // pushing the stale value onto the undo stack when the text changed.
 function commitUndoPoint() {
   const cur = currentState();
+  if (!committed) {
+    // No baseline yet; startup order guarantees one exists today,
+    // but a reorder shouldn't turn into a TypeError here.
+    committed = cur;
+    return;
+  }
   if (cur.source !== committed.source) {
     undoStack.push(committed);
     if (undoStack.length > UNDO_MAX_DEPTH) undoStack.shift();
