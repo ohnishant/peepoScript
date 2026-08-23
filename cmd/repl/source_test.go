@@ -13,7 +13,9 @@ func TestStaticSourceSuggestsByPrefix(t *testing.T) {
 		want   []string
 	}{
 		{"peepo", []string{"peepoCookie", "peepoJuice"}},
-		{"P", []string{"PepoG"}},
+		{"PEEPO", []string{"peepoCookie", "peepoJuice"}},
+		{"PeepoJ", []string{"peepoJuice"}},
+		{"P", []string{"PepoG", "peepoCookie", "peepoJuice"}},
 		{"H", []string{"Hmmge"}},
 		{"zzz", nil},
 		{"", nil},

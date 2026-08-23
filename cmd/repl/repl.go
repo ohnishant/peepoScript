@@ -82,7 +82,7 @@ func (c *runeCompleter) Do(line []rune, pos int) ([][]rune, int) {
 
 	items := make([][]rune, len(suggestions))
 	for i, s := range suggestions {
-		items[i] = []rune(strings.TrimPrefix(s, word))
+		items[i] = []rune(s[len(word):])
 	}
 	return items, start
 }
