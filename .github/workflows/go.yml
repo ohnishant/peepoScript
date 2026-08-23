@@ -3,8 +3,18 @@ name: Tests
 on:
   push:
     branches: [ "main", "dev" ]
+    # Nothing here inspects prose, so docs-only changes skip the whole
+    # workflow. Everything else (code, examples, workflows) still runs it.
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "LICENSE.txt"
   pull_request:
     branches: [ "main" ]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "LICENSE.txt"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -126,11 +136,35 @@ jobs:
           path: integration-results.xml
           retention-days: 7
 
+  # gofmt and go vet, the two checks AGENTS.md requires green. Runs under
+  # the workflow-level paths-ignore, so it also skips docs-only changes.
+  lint:
+    name: lint / fmt + vet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Check formatting
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "::error::These files need gofmt:"
+            printf '%s\n' "$unformatted"
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
   # Single required status for branch protection instead of one check
   # per matrix job.
   ci-ok:
     name: ci ok
-    needs: [unit-tests, integration-tests]
+    needs: [lint, unit-tests, integration-tests]
     if: always()
     runs-on: ubuntu-latest
     steps:
