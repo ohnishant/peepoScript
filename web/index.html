@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>peepoScript playground</title>
+  <link rel="icon" href="peepo.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <img src="peepo.png" alt="peepo" class="logo" />
+    <h1>peepoScript <span class="tag">playground</span></h1>
+    <span id="emote-status" class="status">loading 7tv emotes…</span>
+  </header>
+
+  <main>
+    <section class="pane editor-pane">
+      <div class="pane-title">
+        <span>editor</span>
+        <label class="examples">
+          examples
+          <select id="examples">
+            <option value="countdown">countdown</option>
+            <option value="greet">greet</option>
+            <option value="operators">operators</option>
+          </select>
+        </label>
+      </div>
+      <div id="editor" contenteditable="true" spellcheck="false"
+           aria-label="peepoScript source"></div>
+      <div class="editor-actions">
+        <button id="run-btn" disabled>run (ctrl+enter)</button>
+        <button id="clear-btn">clear output</button>
+      </div>
+    </section>
+
+    <section class="pane output-pane">
+      <div class="pane-title"><span>output</span></div>
+      <div id="output" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      operator-first, emote-keyworded. statements end with a fullstop.
+      <code>peepoFriendship 1 2.</code> is <code>1 + 2</code>.
+      see the <a href="https://github.com/ohnishant/peepoScript#readme">readme</a>
+      for the whole language.
+    </p>
+  </footer>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

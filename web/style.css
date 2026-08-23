@@ -1,0 +1,199 @@
+:root {
+  --bg: #0e0e10;
+  --panel: #18181b;
+  --panel-edge: #26262b;
+  --text: #efeff1;
+  --muted: #8f8f96;
+  --accent: #a970ff;
+  --accent-dim: #6441a5;
+  --error: #ff6b6b;
+  --ok: #57d98d;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--panel-edge);
+}
+
+.logo { width: 32px; height: 32px; }
+
+h1 { font-size: 1.15rem; margin: 0; font-weight: 600; }
+h1 .tag { color: var(--accent); font-weight: 400; }
+
+.status { margin-left: auto; font-size: 0.8rem; color: var(--muted); }
+.status.ready { color: var(--ok); }
+.status.error { color: var(--error); }
+
+main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  min-height: 0;
+}
+
+@media (max-width: 900px) {
+  main { grid-template-columns: 1fr; }
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 320px;
+}
+
+.pane-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--panel-edge);
+}
+.pane-title .examples {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.78rem;
+}
+.examples select {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--panel-edge);
+  border-radius: 4px;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+#editor {
+  flex: 1;
+  padding: 0.9rem;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  outline: none;
+  caret-color: var(--accent);
+  cursor: text;
+}
+
+#editor:focus { background: #1c1c21; }
+
+#editor img.emote,
+#output img.emote {
+  height: 1.35em;
+  vertical-align: text-bottom;
+  margin: 0 0.05em;
+}
+
+#autocomplete {
+  display: none;
+  position: fixed;
+  z-index: 10;
+  min-width: 220px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: #1f1f23;
+  border: 1px solid var(--panel-edge);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.ac-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0.75rem;
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.ac-item.selected { background: var(--accent-dim); }
+.ac-item:hover { background: #2a2a30; }
+.ac-item.selected:hover { background: var(--accent-dim); }
+
+.ac-item img {
+  height: 1.6em;
+  width: auto;
+}
+
+.ac-placeholder {
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 50%;
+  background: var(--panel-edge);
+}
+
+.editor-actions {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.65rem 0.9rem;
+  border-top: 1px solid var(--panel-edge);
+}
+
+button {
+  background: var(--accent-dim);
+  color: var(--text);
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { background: var(--accent); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+#output {
+  flex: 1;
+  padding: 0.9rem;
+  overflow-y: auto;
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+#output .err { color: var(--error); }
+#output .meta { color: var(--muted); font-style: italic; }
+
+footer {
+  padding: 0.5rem 1.25rem 0.9rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+footer a { color: var(--accent); }
+footer code {
+  background: var(--panel);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
