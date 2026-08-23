@@ -17,7 +17,9 @@ go build -o peepo .
 ./peepo
 ```
 
-There is no file mode yet, so everything happens in the REPL:
+### REPL
+
+With no arguments the binary starts the REPL:
 
 ```
 Peepo Script - 0.1.0 | REPL
@@ -40,6 +42,30 @@ Blocks open with `Wokege` and close with `Bedge`. If you hit enter before closin
 >> greet "peepo"
 hello peepo
 ```
+
+### Scripts
+
+The `-c` flag runs source straight from the command line:
+
+```sh
+./peepo -c 'PepoG x 10. peepoChat x.'
+10
+```
+
+Give it a path instead and it runs that file. A path without an extension gets `.peepo` appended when the bare path doesn't exist, so both of these work:
+
+```sh
+./peepo scripts/greeting.peepo
+./peepo scripts/greeting      # finds greeting.peepo
+```
+
+Script mode does not echo the value of the last expression back the way the REPL does. If a script should say something, it says it through `peepoChat`.
+
+Parse errors, runtime errors, and missing files exit with status 1 and print on stderr. A clean run exits 0.
+
+### What's next
+
+The plan is to compile the interpreter to WASM so scripts can run on a webpage (see issue #13 for details). That work builds on two choices already in place: script execution lives in `cmd/runner`, which has no terminal dependencies, and `peepoChat` writes to an injected writer instead of hardcoded stdout, so a browser build can route output into the page.
 
 ## The language
 
