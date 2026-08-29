@@ -212,6 +212,14 @@ function getCaretOffset() {
   return count;
 }
 
+function sourceOffsetAt(node, offset) {
+  if (node !== editor && !editor.contains(node)) return null;
+  const range = document.createRange();
+  range.setStart(editor, 0);
+  range.setEnd(node, offset);
+  return editorSource(range.cloneContents()).length;
+}
+
 function setCaretOffset(offset) {
   const boundaries = []; // {at, make}
   const walk = (node, base) => {
@@ -616,6 +624,24 @@ editor.addEventListener("keydown", (e) => {
       e.preventDefault();
       hideAutocomplete();
     }
+    return;
+  }
+
+  if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
+    e.preventDefault();
+    const sel = getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    const start = sourceOffsetAt(range.startContainer, range.startOffset);
+    const end = sourceOffsetAt(range.endContainer, range.endOffset);
+    if (start === null || end === null) return;
+    const src = editorSource(editor);
+    const next = src.slice(0, start) + "\n" + src.slice(end);
+    editor.replaceChildren(buildEditorFragment(next));
+    setCaretOffset(start + 1);
+    renderGutter(next);
+    scheduleUndoCommit();
+    updateAutocomplete();
     return;
   }
 
