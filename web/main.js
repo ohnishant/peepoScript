@@ -158,6 +158,9 @@ function makeEmoteImg(name) {
 
 // Plain-text source; images contribute their literal names.
 function editorSource(root = editor) {
+  // A bare contenteditable can leave a single <br> or <div><br></div>
+  // as a placeholder. Treat that as empty source so the user can delete
+  // back to an empty editor.
   if (root === editor && root.childNodes.length === 1) {
     const only = root.firstChild;
     if (only.nodeName === "BR" ||
@@ -637,6 +640,7 @@ editor.addEventListener("keydown", (e) => {
   }
 
   if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
+    if (e.isComposing) return; // let IME confirm composition
     e.preventDefault();
     const sel = getSelection();
     if (!sel.rangeCount) return;
