@@ -158,6 +158,18 @@ function makeEmoteImg(name) {
 
 // Plain-text source; images contribute their literal names.
 function editorSource(root = editor) {
+  // A bare contenteditable can leave a single <br> or <div><br></div>
+  // as a placeholder. Treat that as empty source so the user can delete
+  // back to an empty editor.
+  if (root === editor && root.childNodes.length === 1) {
+    const only = root.firstChild;
+    if (only.nodeName === "BR" ||
+        (only.nodeName === "DIV" && only.childNodes.length === 1 &&
+          only.firstChild.nodeName === "BR")) {
+      return "";
+    }
+  }
+
   let src = "";
   for (const node of root.childNodes) {
     if (node.nodeType === Node.TEXT_NODE) {
@@ -210,6 +222,14 @@ function getCaretOffset() {
     // count already holds the total source length.
   }
   return count;
+}
+
+function sourceOffsetAt(node, offset) {
+  if (node !== editor && !editor.contains(node)) return null;
+  const range = document.createRange();
+  range.setStart(editor, 0);
+  range.setEnd(node, offset);
+  return editorSource(range.cloneContents()).length;
 }
 
 function setCaretOffset(offset) {
@@ -616,6 +636,25 @@ editor.addEventListener("keydown", (e) => {
       e.preventDefault();
       hideAutocomplete();
     }
+    return;
+  }
+
+  if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
+    if (e.isComposing) return; // let IME confirm composition
+    e.preventDefault();
+    const sel = getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    const start = sourceOffsetAt(range.startContainer, range.startOffset);
+    const end = sourceOffsetAt(range.endContainer, range.endOffset);
+    if (start === null || end === null) return;
+    const src = editorSource(editor);
+    const next = src.slice(0, start) + "\n" + src.slice(end);
+    editor.replaceChildren(buildEditorFragment(next));
+    setCaretOffset(start + 1);
+    renderGutter(next);
+    scheduleUndoCommit();
+    updateAutocomplete();
     return;
   }
 
