@@ -158,6 +158,15 @@ function makeEmoteImg(name) {
 
 // Plain-text source; images contribute their literal names.
 function editorSource(root = editor) {
+  if (root === editor && root.childNodes.length === 1) {
+    const only = root.firstChild;
+    if (only.nodeName === "BR" ||
+        (only.nodeName === "DIV" && only.childNodes.length === 1 &&
+          only.firstChild.nodeName === "BR")) {
+      return "";
+    }
+  }
+
   let src = "";
   for (const node of root.childNodes) {
     if (node.nodeType === Node.TEXT_NODE) {
