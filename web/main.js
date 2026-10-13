@@ -36,6 +36,7 @@ function spawnWorker() {
     worker.terminate();
     worker = spawnWorker();
     runBtn.disabled = false;
+    runBtn.textContent = "run (ctrl+enter)";
     appendOutput("interpreter restarted; saved bindings are gone.", "err");
   };
   w.postMessage({ type: "keywords" });
@@ -54,12 +55,14 @@ function onWorkerMessage(e) {
         clearTimeout(pendingRun.timer);
         pendingRun = null;
         runBtn.disabled = false;
+        runBtn.textContent = "run (ctrl+enter)";
         renderResult(msg.result);
       }
       break;
     case "boot-error":
       appendOutput(`failed to load peepo.wasm: ${msg.error}`, "err");
-      break;
+    updateClearBtn();
+    break;
   }
 }
 
@@ -106,6 +109,7 @@ async function loadEmotes(keywords) {
 
   normalize(); // re-render whatever is already in the editor
   runBtn.disabled = false;
+  runBtn.textContent = "run (ctrl+enter)";
 }
 
 function emoteUrl(emote) {
@@ -687,6 +691,7 @@ function runCode() {
   output.textContent = "";
   updateClearBtn();
   runBtn.disabled = true;
+  runBtn.textContent = "running…";
   runId += 1;
   const id = runId;
   const timer = setTimeout(() => {
@@ -695,6 +700,7 @@ function runCode() {
     worker.terminate();
     worker = spawnWorker();
     runBtn.disabled = false;
+    runBtn.textContent = "run (ctrl+enter)";
     appendOutput(
       "run exceeded 5s and was killed (infinite loop?). " +
       "the worker restarted, so saved bindings are gone.",
