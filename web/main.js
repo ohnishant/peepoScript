@@ -10,6 +10,7 @@ const gutter = document.getElementById("gutter");
 const output = document.getElementById("output");
 const runBtn = document.getElementById("run-btn");
 const clearBtn = document.getElementById("clear-btn");
+const copyBtn = document.getElementById("copy-btn");
 const statusEl = document.getElementById("emote-status");
 
 const acEl = document.createElement("div");
@@ -743,9 +744,21 @@ function appendOutput(text, cls) {
 
 function updateClearBtn() {
   clearBtn.disabled = !output.textContent.trim();
+  if (copyBtn) copyBtn.disabled = !output.textContent.trim();
 }
 runBtn.addEventListener("click", runCode);
 clearBtn.addEventListener("click", () => { output.textContent = ""; updateClearBtn(); });
+if (copyBtn) copyBtn.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(output.textContent);
+    const prev = copyBtn.textContent;
+    copyBtn.textContent = "copied";
+    setTimeout(() => (copyBtn.textContent = prev), 1200);
+  } catch {
+    copyBtn.textContent = "failed";
+    setTimeout(() => (copyBtn.textContent = "copy"), 1200);
+  }
+});
 
 // ------------------------------------------------------------ examples
 
