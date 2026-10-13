@@ -61,8 +61,10 @@ function onWorkerMessage(e) {
       break;
     case "boot-error":
       appendOutput(`failed to load peepo.wasm: ${msg.error}`, "err");
-    updateClearBtn();
-    break;
+      statusEl.textContent = "interpreter failed to load";
+      statusEl.classList.add("error");
+      updateClearBtn();
+      break;
   }
 }
 
