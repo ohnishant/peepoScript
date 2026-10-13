@@ -224,6 +224,15 @@ button {
 button:hover:not(:disabled) { background: var(--accent); }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
 
+/* Keyboard focus must be visible; default outlines were removed
+   for the editor, so restore them for interactive controls. */
+button:focus-visible,
+.examples select:focus-visible,
+#editor:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 #output {
   flex: 1;
   padding: 0.9rem;
