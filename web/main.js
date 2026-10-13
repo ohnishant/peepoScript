@@ -700,7 +700,11 @@ document.addEventListener("keydown", (e) => {
 function runCode() {
   if (runBtn.disabled || pendingRun) return;
   const code = editorSource(editor);
-  if (!code.trim()) return;
+  if (!code.trim()) {
+    appendOutput("nothing to run", "meta");
+    updateClearBtn();
+    return;
+  }
 
   output.textContent = "";
   updateClearBtn();
