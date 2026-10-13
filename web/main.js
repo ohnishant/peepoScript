@@ -685,6 +685,7 @@ function runCode() {
   if (!code.trim()) return;
 
   output.textContent = "";
+  updateClearBtn();
   runBtn.disabled = true;
   runId += 1;
   const id = runId;
@@ -710,6 +711,7 @@ function renderResult(result) {
   if (result.output) appendOutput(result.output.replace(/\n$/, ""));
   if (result.value) appendOutput(result.value);
   for (const err of result.errors ?? []) appendOutput(err, "err");
+  updateClearBtn();
 }
 
 function appendOutput(text, cls) {
@@ -718,10 +720,14 @@ function appendOutput(text, cls) {
   div.textContent = text;
   output.append(div);
   output.scrollTop = output.scrollHeight;
+  updateClearBtn();
 }
 
+function updateClearBtn() {
+  clearBtn.disabled = !output.textContent.trim();
+}
 runBtn.addEventListener("click", runCode);
-clearBtn.addEventListener("click", () => (output.textContent = ""));
+clearBtn.addEventListener("click", () => { output.textContent = ""; updateClearBtn(); });
 
 // ------------------------------------------------------------ examples
 
@@ -760,7 +766,10 @@ const examplesSelect = document.getElementById("examples");
 function loadExample(key) {
   setEditorSource(EXAMPLES[key] ?? EXAMPLES.countdown);
   output.textContent = "";
+  updateClearBtn();
 }
+
+updateClearBtn();
 
 examplesSelect?.addEventListener("change", (e) => loadExample(e.target.value));
 
