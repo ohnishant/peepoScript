@@ -259,6 +259,13 @@ button:focus-visible,
 #output .err { color: var(--error); }
 #output .meta { color: var(--muted); font-style: italic; }
 
+/* Friendly empty state so the right pane never looks broken. */
+#output:empty::before {
+  content: "run your code to see output here";
+  color: var(--muted);
+  font-style: italic;
+}
+
 footer {
   padding: 0.5rem 1.25rem 0.9rem;
   color: var(--muted);
