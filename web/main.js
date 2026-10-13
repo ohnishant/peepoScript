@@ -476,6 +476,10 @@ editor.addEventListener("paste", (e) => {
 
 editor.addEventListener("blur", () => hideAutocompleteSoon());
 
+document.addEventListener("mousedown", (e) => {
+  if (!acEl.contains(e.target) && e.target !== editor) hideAutocomplete();
+});
+
 // The editor is the only scroller; the gutter mirrors it vertically and
 // never moves horizontally (wide lines scroll under fixed numbers, like
 // a real editor).
@@ -675,7 +679,7 @@ editor.addEventListener("keydown", (e) => {
 });
 
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && e.ctrlKey) {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
     e.preventDefault();
     runCode();
   }
