@@ -65,6 +65,8 @@ main {
 
 @media (max-width: 900px) {
   main { grid-template-columns: 1fr; grid-template-rows: none; }
+  .pane { min-height: 240px; max-height: 60vh; }
+  #editor, #output { max-height: 45vh; }
 }
 
 @media (min-width: 901px) {
