@@ -803,7 +803,11 @@ function loadExample(key) {
 
 updateClearBtn();
 
-examplesSelect?.addEventListener("change", (e) => loadExample(e.target.value));
+examplesSelect?.addEventListener("change", (e) => {
+  loadExample(e.target.value);
+  // Reset so the same example can be reloaded later.
+  if (examplesSelect) examplesSelect.value = "";
+});
 
 function encodeSource(src) { return btoa(unescape(encodeURIComponent(src))); }
 function decodeSource(s) { return decodeURIComponent(escape(atob(s))); }
