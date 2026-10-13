@@ -11,6 +11,7 @@ const output = document.getElementById("output");
 const runBtn = document.getElementById("run-btn");
 const clearBtn = document.getElementById("clear-btn");
 const copyBtn = document.getElementById("copy-btn");
+const shareBtn = document.getElementById("share-btn");
 const statusEl = document.getElementById("emote-status");
 
 const acEl = document.createElement("div");
@@ -804,5 +805,37 @@ updateClearBtn();
 
 examplesSelect?.addEventListener("change", (e) => loadExample(e.target.value));
 
-// default
-loadExample("countdown");
+function encodeSource(src) { return btoa(unescape(encodeURIComponent(src))); }
+function decodeSource(s) { return decodeURIComponent(escape(atob(s))); }
+
+// share link handling
+if (shareBtn) shareBtn.addEventListener("click", async () => {
+  const code = editorSource(editor);
+  const url = `${location.origin}${location.pathname}#code=${encodeSource(code)}`;
+  history.replaceState(null, "", `#code=${encodeSource(code)}`);
+  try {
+    await navigator.clipboard.writeText(url);
+    const prev = shareBtn.textContent;
+    shareBtn.textContent = "link copied";
+    setTimeout(() => (shareBtn.textContent = prev), 1400);
+  } catch {
+    const prev = shareBtn.textContent;
+    shareBtn.textContent = "copied url";
+    setTimeout(() => (shareBtn.textContent = prev), 1400);
+  }
+});
+
+// default / deep-link load
+const hash = location.hash || "";
+const match = hash.match(/^#code=(.+)$/);
+if (match) {
+  try {
+    setEditorSource(decodeSource(match[1]));
+    output.textContent = "";
+    updateClearBtn();
+  } catch {
+    loadExample("countdown");
+  }
+} else {
+  loadExample("countdown");
+}
