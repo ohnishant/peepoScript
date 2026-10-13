@@ -10,6 +10,8 @@ const gutter = document.getElementById("gutter");
 const output = document.getElementById("output");
 const runBtn = document.getElementById("run-btn");
 const clearBtn = document.getElementById("clear-btn");
+const copyBtn = document.getElementById("copy-btn");
+const shareBtn = document.getElementById("share-btn");
 const statusEl = document.getElementById("emote-status");
 
 const acEl = document.createElement("div");
@@ -36,6 +38,7 @@ function spawnWorker() {
     worker.terminate();
     worker = spawnWorker();
     runBtn.disabled = false;
+    runBtn.textContent = "run (ctrl+enter)";
     appendOutput("interpreter restarted; saved bindings are gone.", "err");
   };
   w.postMessage({ type: "keywords" });
@@ -54,11 +57,15 @@ function onWorkerMessage(e) {
         clearTimeout(pendingRun.timer);
         pendingRun = null;
         runBtn.disabled = false;
+        runBtn.textContent = "run (ctrl+enter)";
         renderResult(msg.result);
       }
       break;
     case "boot-error":
       appendOutput(`failed to load peepo.wasm: ${msg.error}`, "err");
+      statusEl.textContent = "interpreter failed to load";
+      statusEl.classList.add("error");
+      updateClearBtn();
       break;
   }
 }
@@ -106,6 +113,7 @@ async function loadEmotes(keywords) {
 
   normalize(); // re-render whatever is already in the editor
   runBtn.disabled = false;
+  runBtn.textContent = "run (ctrl+enter)";
 }
 
 function emoteUrl(emote) {
@@ -472,6 +480,10 @@ editor.addEventListener("paste", (e) => {
 
 editor.addEventListener("blur", () => hideAutocompleteSoon());
 
+document.addEventListener("mousedown", (e) => {
+  if (!acEl.contains(e.target) && e.target !== editor) hideAutocomplete();
+});
+
 // The editor is the only scroller; the gutter mirrors it vertically and
 // never moves horizontally (wide lines scroll under fixed numbers, like
 // a real editor).
@@ -661,9 +673,15 @@ editor.addEventListener("keydown", (e) => {
   if (e.key === "Tab") {
     // No popup yet: complete directly when there is exactly one
     // candidate, otherwise open the popup for the word at the caret.
-    e.preventDefault();
+    // If there is no word at the caret, fall through to normal tab
+    // insertion so indentation still works.
     const hit = currentWordBeforeCaret();
-    if (!hit) return;
+    if (!hit) {
+      e.preventDefault();
+      document.execCommand("insertText", false, "    ");
+      return;
+    }
+    e.preventDefault();
     const cands = completionCandidates(hit.word).filter((n) => n !== hit.word);
     if (cands.length === 1) acceptAutocomplete(cands[0]);
     else updateAutocomplete();
@@ -671,7 +689,7 @@ editor.addEventListener("keydown", (e) => {
 });
 
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && e.ctrlKey) {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
     e.preventDefault();
     runCode();
   }
@@ -682,10 +700,16 @@ document.addEventListener("keydown", (e) => {
 function runCode() {
   if (runBtn.disabled || pendingRun) return;
   const code = editorSource(editor);
-  if (!code.trim()) return;
+  if (!code.trim()) {
+    appendOutput("nothing to run", "meta");
+    updateClearBtn();
+    return;
+  }
 
   output.textContent = "";
+  updateClearBtn();
   runBtn.disabled = true;
+  runBtn.textContent = "running…";
   runId += 1;
   const id = runId;
   const timer = setTimeout(() => {
@@ -694,6 +718,7 @@ function runCode() {
     worker.terminate();
     worker = spawnWorker();
     runBtn.disabled = false;
+    runBtn.textContent = "run (ctrl+enter)";
     appendOutput(
       "run exceeded 5s and was killed (infinite loop?). " +
       "the worker restarted, so saved bindings are gone.",
@@ -710,6 +735,7 @@ function renderResult(result) {
   if (result.output) appendOutput(result.output.replace(/\n$/, ""));
   if (result.value) appendOutput(result.value);
   for (const err of result.errors ?? []) appendOutput(err, "err");
+  updateClearBtn();
 }
 
 function appendOutput(text, cls) {
@@ -718,10 +744,26 @@ function appendOutput(text, cls) {
   div.textContent = text;
   output.append(div);
   output.scrollTop = output.scrollHeight;
+  updateClearBtn();
 }
 
+function updateClearBtn() {
+  clearBtn.disabled = !output.textContent.trim();
+  if (copyBtn) copyBtn.disabled = !output.textContent.trim();
+}
 runBtn.addEventListener("click", runCode);
-clearBtn.addEventListener("click", () => (output.textContent = ""));
+clearBtn.addEventListener("click", () => { output.textContent = ""; updateClearBtn(); });
+if (copyBtn) copyBtn.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(output.textContent);
+    const prev = copyBtn.textContent;
+    copyBtn.textContent = "copied";
+    setTimeout(() => (copyBtn.textContent = prev), 1200);
+  } catch {
+    copyBtn.textContent = "failed";
+    setTimeout(() => (copyBtn.textContent = "copy"), 1200);
+  }
+});
 
 // ------------------------------------------------------------ examples
 
@@ -760,9 +802,48 @@ const examplesSelect = document.getElementById("examples");
 function loadExample(key) {
   setEditorSource(EXAMPLES[key] ?? EXAMPLES.countdown);
   output.textContent = "";
+  updateClearBtn();
 }
 
-examplesSelect?.addEventListener("change", (e) => loadExample(e.target.value));
+updateClearBtn();
 
-// default
-loadExample("countdown");
+examplesSelect?.addEventListener("change", (e) => {
+  loadExample(e.target.value);
+  // Reset so the same example can be reloaded later.
+  if (examplesSelect) examplesSelect.value = "";
+});
+
+function encodeSource(src) { return btoa(unescape(encodeURIComponent(src))); }
+function decodeSource(s) { return decodeURIComponent(escape(atob(s))); }
+
+// share link handling
+if (shareBtn) shareBtn.addEventListener("click", async () => {
+  const code = editorSource(editor);
+  const url = `${location.origin}${location.pathname}#code=${encodeSource(code)}`;
+  history.replaceState(null, "", `#code=${encodeSource(code)}`);
+  try {
+    await navigator.clipboard.writeText(url);
+    const prev = shareBtn.textContent;
+    shareBtn.textContent = "link copied";
+    setTimeout(() => (shareBtn.textContent = prev), 1400);
+  } catch {
+    const prev = shareBtn.textContent;
+    shareBtn.textContent = "copied url";
+    setTimeout(() => (shareBtn.textContent = prev), 1400);
+  }
+});
+
+// default / deep-link load
+const hash = location.hash || "";
+const match = hash.match(/^#code=(.+)$/);
+if (match) {
+  try {
+    setEditorSource(decodeSource(match[1]));
+    output.textContent = "";
+    updateClearBtn();
+  } catch {
+    loadExample("countdown");
+  }
+} else {
+  loadExample("countdown");
+}

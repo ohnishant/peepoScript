@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Online playground for peepoScript, an operator-first emote-keyworded language." />
   <title>peepoScript playground</title>
   <link rel="icon" href="peepo.png" />
   <link rel="stylesheet" href="style.css" />
@@ -21,6 +22,7 @@
         <label class="examples">
           examples
           <select id="examples">
+            <option value="" disabled selected>load an example…</option>
             <option value="countdown">countdown</option>
             <option value="greet">greet</option>
             <option value="operators">operators</option>
@@ -29,17 +31,21 @@
       </div>
       <div class="editor-wrap">
         <div id="gutter" aria-hidden="true"></div>
-        <div id="editor" contenteditable="true" spellcheck="false"
-             aria-label="peepoScript source"></div>
+        <div id="editor" contenteditable="true" spellcheck="false" role="textbox"
+             aria-multiline="true" aria-label="peepoScript source"></div>
       </div>
       <div class="editor-actions">
-        <button id="run-btn" disabled>run (ctrl+enter)</button>
-        <button id="clear-btn">clear output</button>
+        <button id="run-btn" disabled title="Run the editor contents (Ctrl/Cmd+Enter)">run (ctrl+enter)</button>
+        <button id="share-btn" title="Copy a link to this snippet">share link</button>
+        <button id="clear-btn" title="Clear the output pane">clear output</button>
       </div>
     </section>
 
     <section class="pane output-pane">
-      <div class="pane-title"><span>output</span></div>
+      <div class="pane-title">
+        <span>output</span>
+        <button id="copy-btn" disabled title="Copy output to clipboard">copy</button>
+      </div>
       <div id="output" aria-live="polite"></div>
     </section>
   </main>
