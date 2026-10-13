@@ -82,9 +82,10 @@ main {
   flex-direction: column;
   background: var(--panel);
   border: 1px solid var(--panel-edge);
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
   min-height: 320px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
 }
 
 .pane-title {
@@ -170,14 +171,15 @@ main {
 #autocomplete {
   display: none;
   position: fixed;
-  z-index: 10;
-  min-width: 220px;
-  max-height: 260px;
+  z-index: 20;
+  min-width: 240px;
+  max-height: 300px;
   overflow-y: auto;
-  background: #1f1f23;
+  background: rgba(31, 31, 35, 0.92);
+  backdrop-filter: blur(6px);
   border: 1px solid var(--panel-edge);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
 }
 
 .ac-item {
