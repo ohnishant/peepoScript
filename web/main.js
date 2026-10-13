@@ -671,9 +671,15 @@ editor.addEventListener("keydown", (e) => {
   if (e.key === "Tab") {
     // No popup yet: complete directly when there is exactly one
     // candidate, otherwise open the popup for the word at the caret.
-    e.preventDefault();
+    // If there is no word at the caret, fall through to normal tab
+    // insertion so indentation still works.
     const hit = currentWordBeforeCaret();
-    if (!hit) return;
+    if (!hit) {
+      e.preventDefault();
+      document.execCommand("insertText", false, "    ");
+      return;
+    }
+    e.preventDefault();
     const cands = completionCandidates(hit.word).filter((n) => n !== hit.word);
     if (cands.length === 1) acceptAutocomplete(cands[0]);
     else updateAutocomplete();
