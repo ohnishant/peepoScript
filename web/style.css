@@ -221,10 +221,21 @@ button {
   border-radius: 6px;
   padding: 0.5rem 1rem;
   font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
+  transition: background 0.15s ease, transform 0.05s ease;
 }
 button:hover:not(:disabled) { background: var(--accent); }
+button:active:not(:disabled) { transform: translateY(1px); }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Secondary button for non-destructive utilities. */
+#clear-btn {
+  background: transparent;
+  border: 1px solid var(--panel-edge);
+  color: var(--muted);
+}
+#clear-btn:hover:not(:disabled) { background: var(--panel-edge); color: var(--text); }
 
 /* Keyboard focus must be visible; default outlines were removed
    for the editor, so restore them for interactive controls. */
